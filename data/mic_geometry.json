@@ -1,0 +1,13 @@
+{
+  "inter_ear_distance_m": 0.21809,
+  "intra_ear_spacing_m": 0.01598,
+  "speed_of_sound_m_s": 343.0,
+  "method": "joint SRP-style grid search, all 6 mic pairs x 4 known source directions",
+  "channel_order": [
+    "LF",
+    "LR",
+    "RF",
+    "RR"
+  ],
+  "azimuth_convention": "degrees, 0=front, 90=left, 180=back, 270=right"
+}
