@@ -94,10 +94,10 @@ r_lf_lr, lags_lf_lr = gcc_phat(ex[:, CH_LF], ex[:, CH_LR])
 r_lf_rr, lags_lf_rr = gcc_phat(ex[:, CH_LF], ex[:, CH_RR])
 
 # GCC(LF, RF): left-right sensitive pair
-#   right source (90°)  → RF leads LF  → negative peak  (RF arrives first)
-#   left  source (270°) → LF leads RF  → positive peak  (LF arrives first)
-tau_rf_90  = peak_on_side(r_lf_rf, lags_lf_rf, 'neg')
-tau_rf_270 = peak_on_side(r_lf_rf, lags_lf_rf, 'pos')
+#   left  source (90°)  → LF leads RF  → positive peak  (LF arrives first)
+#   right source (270°) → RF leads LF  → negative peak  (RF arrives first)
+tau_rf_90  = peak_on_side(r_lf_rf, lags_lf_rf, 'pos')
+tau_rf_270 = peak_on_side(r_lf_rf, lags_lf_rf, 'neg')
 
 # GCC(LF, LR): front-rear sensitive pair
 #   front source (0°)   → LF leads LR  → positive peak  (LF is in front)
@@ -108,7 +108,7 @@ tau_lr_180 = peak_on_side(r_lf_lr, lags_lf_lr, 'neg')
 # GCC(LF, RR): diagonal pair — all 4 sources give distinct peaks.
 # RR is both rear and right, so:
 #   front/back sources  behave like LR  → peaks near tau_lr_0 / tau_lr_180
-#   left/right  sources behave like RF  → peaks near tau_rf_270 / tau_rf_90
+#   left/right  sources behave like RF  → peaks near tau_rf_90 / tau_rf_270
 tau_rr_0   = peak_near(r_lf_rr, lags_lf_rr, tau_lr_0)
 tau_rr_180 = peak_near(r_lf_rr, lags_lf_rr, tau_lr_180)
 tau_rr_90  = peak_near(r_lf_rr, lags_lf_rr, tau_rf_90)
@@ -124,9 +124,9 @@ tau_lr_270 = peak_near(r_lf_lr, lags_lf_lr, 0, window_ms=0.15)
 # Full steering vectors: [τ_LF, τ_LR, τ_RF, τ_RR], all relative to LF (=0)
 steering = {
     "0deg_front":  [0, tau_lr_0,   tau_rf_0,   tau_rr_0  ],
-    "90deg_right": [0, tau_lr_90,  tau_rf_90,  tau_rr_90 ],
+    "90deg_left":  [0, tau_lr_90,  tau_rf_90,  tau_rr_90 ],
     "180deg_back": [0, tau_lr_180, tau_rf_180, tau_rr_180],
-    "270deg_left": [0, tau_lr_270, tau_rf_270, tau_rr_270],
+    "270deg_right": [0, tau_lr_270, tau_rf_270, tau_rr_270],
 }
 
 def to_ms(s): return s / fs * 1000
@@ -150,22 +150,22 @@ fig.suptitle(
     fontsize=12
 )
 
-colours = {"0deg_front": "tab:blue", "90deg_right": "tab:orange",
-           "180deg_back": "tab:green", "270deg_left": "tab:red"}
+colours = {"0deg_front": "tab:blue", "90deg_left": "tab:orange",
+           "180deg_back": "tab:green", "270deg_right": "tab:red"}
 
 panel_data = [
     ("GCC-PHAT(LF, RF)  — left/right sensitive",
      r_lf_rf, lags_lf_rf,
-     {"90deg_right": tau_rf_90, "270deg_left": tau_rf_270,
+     {"90deg_left": tau_rf_90, "270deg_right": tau_rf_270,
       "0deg_front": tau_rf_0, "180deg_back": tau_rf_180}),
     ("GCC-PHAT(LF, LR)  — front/rear sensitive",
      r_lf_lr, lags_lf_lr,
      {"0deg_front": tau_lr_0, "180deg_back": tau_lr_180,
-      "90deg_right": tau_lr_90, "270deg_left": tau_lr_270}),
+      "90deg_left": tau_lr_90, "270deg_right": tau_lr_270}),
     ("GCC-PHAT(LF, RR)  — diagonal (rear + right)",
      r_lf_rr, lags_lf_rr,
-     {"0deg_front": tau_rr_0, "90deg_right": tau_rr_90,
-      "180deg_back": tau_rr_180, "270deg_left": tau_rr_270}),
+     {"0deg_front": tau_rr_0, "90deg_left": tau_rr_90,
+      "180deg_back": tau_rr_180, "270deg_right": tau_rr_270}),
 ]
 
 for ax, (title, r, lags, peaks) in zip(axes, panel_data):

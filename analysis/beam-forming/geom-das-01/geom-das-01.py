@@ -17,8 +17,8 @@ Mic layout (positions in samples, x=right, y=front):
   LF: (-τ_lr/2,  +τ_fr/2)    LR: (-τ_lr/2,  -τ_fr/2)
   RF: (+τ_lr/2,  +τ_fr/2)    RR: (+τ_lr/2,  -τ_fr/2)
 
-Azimuth convention (clockwise from front):
-  0° = front (+y),  90° = right (+x),  180° = back (−y),  270° = left (−x)
+Azimuth convention (case Figure 2, counterclockwise from front):
+  0° = front (+y),  90° = left (−x),  180° = back (−y),  270° = right (+x)
 """
 
 import numpy as np
@@ -60,9 +60,9 @@ mic_pos = np.array([
 ])
 
 def unit_vec(deg):
-    """Unit vector pointing FROM listener TOWARD source at azimuth deg."""
+    """Unit vector pointing FROM listener TOWARD source at case azimuth deg."""
     rad = np.radians(deg)
-    return np.array([np.sin(rad), np.cos(rad)])   # (x=right, y=front)
+    return np.array([-np.sin(rad), np.cos(rad)])  # (x=right, y=front)
 
 def steering_delays(deg):
     """
@@ -73,8 +73,8 @@ def steering_delays(deg):
     return (mic_pos[CH_LF] - mic_pos) @ u   # shape (4,)
 
 # ── compute and print steering vectors ────────────────────────────────────
-directions = {"0deg_front": 0, "90deg_right": 90,
-              "180deg_back": 180, "270deg_left": 270}
+directions = {"0deg_front": 0, "90deg_left": 90,
+              "180deg_back": 180, "270deg_right": 270}
 
 print("\n── Geometry-computed steering delays ─────────────────────────────────")
 print(f"{'Direction':<14} {'τ_LF':>12} {'τ_LR':>12} {'τ_RF':>12} {'τ_RR':>12}")
@@ -135,7 +135,7 @@ for ax, (label, deg) in zip(axes_pat, directions.items()):
     ax.plot(np.radians(sweep), gains, linewidth=1.2)
     ax.set_title(label.replace("_", "\n"), fontsize=9, pad=10)
     ax.set_theta_zero_location("N")      # 0° at top = front
-    ax.set_theta_direction(-1)           # clockwise
+    ax.set_theta_direction(1)            # counterclockwise (case convention)
     ax.set_ylim(0, 1)
     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(["", "0.5", "", "1.0"], fontsize=7)

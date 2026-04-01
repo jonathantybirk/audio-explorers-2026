@@ -26,7 +26,14 @@
   Still not clean separation — side-looking beams are asymmetric and there is
   substantial bleed because covariance is estimated from the same 4-speaker mix.
 
+- **example-validation-01**: Reframed discovery properly around `example_mixture.wav`
+  only. Compared closest-mic baselines vs geometry-DAS vs geometry-MVDR on the
+  known 0° / 90° / 180° / 270° scene. Result: geometry-DAS does not clearly beat
+  the closest mic; MVDR improves cross-beam differentiation somewhat, but still
+  leaves strong front/back confusion and does not cleanly isolate talkers.
+
 ### Up next
 
-- Refine the non-deep path around MVDR:
-  time-local covariance and/or a postfilter, plus objective comparison vs DAS
+- Keep discovery and transfer separate:
+  validate only on `example_mixture.wav`, then later estimate DoA for
+  `mixture.wav` with a separate localization step

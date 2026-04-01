@@ -40,9 +40,9 @@ PATTERN_FREQS_HZ = np.array([500, 1000, 2000, 3500])
 
 directions = {
     "0deg_front": 0,
-    "90deg_right": 90,
+    "90deg_left": 90,
     "180deg_back": 180,
-    "270deg_left": 270,
+    "270deg_right": 270,
 }
 
 
@@ -54,7 +54,7 @@ def to_float64(x):
 
 def unit_vec(deg):
     rad = np.radians(deg)
-    return np.array([np.sin(rad), np.cos(rad)])
+    return np.array([-np.sin(rad), np.cos(rad)])
 
 
 mic_pos = np.array(
@@ -156,7 +156,7 @@ def plot_patterns(freqs_hz, weights_by_label, fs):
         ax.plot(np.radians(sweep), gains, linewidth=1.2)
         ax.set_title(label.replace("_", "\n"), fontsize=9, pad=10)
         ax.set_theta_zero_location("N")
-        ax.set_theta_direction(-1)
+        ax.set_theta_direction(1)
         ax.set_ylim(0, 1)
         ax.set_yticks([0.25, 0.5, 0.75, 1.0])
         ax.set_yticklabels(["", "0.5", "", "1.0"], fontsize=7)
@@ -267,7 +267,7 @@ def write_summary(path, cond_by_label, error_by_label, rms_by_label, cardinal_re
             "Cardinal response table (dB, averaged over pattern frequencies):",
             "  rows = steered beam, columns = probe direction",
             "",
-            f"{'beam':<14} {'0deg_front':>12} {'90deg_right':>12} {'180deg_back':>12} {'270deg_left':>12}",
+            f"{'beam':<14} {'0deg_front':>12} {'90deg_left':>12} {'180deg_back':>12} {'270deg_right':>12}",
         ]
     )
     for label in labels:
@@ -275,9 +275,9 @@ def write_summary(path, cond_by_label, error_by_label, rms_by_label, cardinal_re
         lines.append(
             f"{label:<14} "
             f"{row['0deg_front']:12.2f} "
-            f"{row['90deg_right']:12.2f} "
+            f"{row['90deg_left']:12.2f} "
             f"{row['180deg_back']:12.2f} "
-            f"{row['270deg_left']:12.2f}"
+            f"{row['270deg_right']:12.2f}"
         )
 
     path.write_text("\n".join(lines) + "\n")
