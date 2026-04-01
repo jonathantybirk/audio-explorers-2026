@@ -22,15 +22,12 @@ What the case guarantees:
 
 - There are two microphones on the left ear and two microphones on the right ear.
 - Each ear has a front microphone and a rear microphone.
-- A sound from the front reaches the front microphones before the rear microphones.
-- A sound from the left reaches the left microphones before the right microphones.
 
 What the case does not give:
 
 - No exact microphone spacing in meters.
 - No exact head dimensions.
 - No microphone directivity model.
-- No statement that the microphones are "pointing at" `45°`, `135°`, etc.
 
 The safe interpretation is that the case specifies microphone positions on the head, not a separate set of microphone look angles.
 
