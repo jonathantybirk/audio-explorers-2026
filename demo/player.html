@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Beamforming + ICA Demo — example_mixture</title>
+  <title>Beamforming + Separation Demo — example_mixture</title>
   <style>
     :root {
       --bg:     #f4f1ea;
@@ -142,6 +142,7 @@
     .badge.mvdr { background: #d1fae5; color: #065f46; }
     .badge.auxiva { background: #fed7aa; color: #9a3412; }
     .badge.tdica  { background: #fecdd3; color: #9f1239; }
+    .badge.duet   { background: #e0e7ff; color: #4338ca; }
     .badge.mic  { background: #fef3c7; color: #92400e; }
     .badge.raw  { background: #e5e7eb; color: #374151; }
 
@@ -198,10 +199,10 @@
 <body>
 <div class="wrap">
   <div class="panel">
-    <h1>Beamforming + ICA Demo</h1>
+    <h1>Beamforming + Separation Demo</h1>
     <div class="sub">
       Source: <code>example_mixture.wav</code> — four talkers at known positions 0° / 90° / 180° / 270°.<br>
-      Tracks are grouped into Raw, Beamforming, and ICA.
+      Tracks are grouped into Raw, Beamforming, and Separation.
     </div>
 
     <div class="status" id="status">Ready</div>
@@ -211,7 +212,7 @@
       <span class="filter-title">Show Columns</span>
       <label class="algo-toggle"><input type="checkbox" data-family="raw" checked> Raw</label>
       <label class="algo-toggle"><input type="checkbox" data-family="beamforming" checked> Beamforming</label>
-      <label class="algo-toggle"><input type="checkbox" data-family="ica" checked> ICA</label>
+      <label class="algo-toggle"><input type="checkbox" data-family="separation" checked> Separation</label>
     </div>
 
     <div class="layout">
@@ -234,13 +235,14 @@
           <div class="playlist" id="playlist-beam"></div>
         </div>
 
-        <div class="playlist-wrap" id="col-ica">
-          <h2>ICA</h2>
+        <div class="playlist-wrap" id="col-separation">
+          <h2>Separation</h2>
           <div class="section-filters">
             <label class="section-toggle"><input type="checkbox" data-section="tdica" checked> TD-ICA</label>
+            <label class="section-toggle"><input type="checkbox" data-section="duet" checked> DUET</label>
             <label class="section-toggle"><input type="checkbox" data-section="auxiva" checked> AuxIVA</label>
           </div>
-          <div class="playlist" id="playlist-ica"></div>
+          <div class="playlist" id="playlist-separation"></div>
         </div>
       </div>
 
@@ -256,6 +258,7 @@
           <span><span class="dot" style="background:#6b7280"></span> Raw scene</span>
           <span><span class="dot" style="background:#1e40af"></span> Delay-and-Sum</span>
           <span><span class="dot" style="background:#065f46"></span> MVDR</span>
+          <span><span class="dot" style="background:#4338ca"></span> DUET</span>
           <span><span class="dot" style="background:#b45309"></span> AuxIVA</span>
           <span><span class="dot" style="background:#be123c"></span> TD-ICA</span>
           <span><span class="dot" style="background:#92400e"></span> Raw mic</span>
@@ -316,11 +319,21 @@
       desc: "time-domain FastICA component",
       src: "../analysis/ica/separated/tdica_component_4.wav" },
   ];
+  const DUET_SOURCES = [
+    { id: "duet_0", label: "DUET source 1", desc: "estimated DoA 356° (nearest 0° front)",
+      src: "../analysis/duet/separated/duet_0deg_front.wav" },
+    { id: "duet_1", label: "DUET source 2", desc: "estimated DoA 90° (left)",
+      src: "../analysis/duet/separated/duet_90deg_left.wav" },
+    { id: "duet_2", label: "DUET source 3", desc: "estimated DoA 176° (nearest 180° back)",
+      src: "../analysis/duet/separated/duet_180deg_back.wav" },
+    { id: "duet_3", label: "DUET source 4", desc: "estimated DoA 270° (right)",
+      src: "../analysis/duet/separated/duet_270deg_right.wav" },
+  ];
 
   const enabledFamilies = {
     raw: true,
     beamforming: true,
-    ica: true,
+    separation: true,
   };
 
   const enabledSections = {
@@ -329,6 +342,7 @@
     das: true,
     mvdr: true,
     tdica: true,
+    duet: true,
     auxiva: true,
   };
 
@@ -376,7 +390,7 @@
   for (const track of TDICA_SOURCES) {
     allTracks.push({
       ...track,
-      family: "ica",
+      family: "separation",
       group: "tdica",
       section: "tdica",
       badge: "tdica",
@@ -384,10 +398,21 @@
     });
   }
 
+  for (const track of DUET_SOURCES) {
+    allTracks.push({
+      ...track,
+      family: "separation",
+      group: "duet",
+      section: "duet",
+      badge: "duet",
+      sub: track.desc,
+    });
+  }
+
   for (const track of AUXIVA_SOURCES) {
     allTracks.push({
       ...track,
-      family: "ica",
+      family: "separation",
       group: "auxiva",
       section: "auxiva",
       badge: "auxiva",
@@ -397,10 +422,10 @@
 
   const rawColEl = document.getElementById("col-raw");
   const beamColEl = document.getElementById("col-beamforming");
-  const icaColEl = document.getElementById("col-ica");
+  const separationColEl = document.getElementById("col-separation");
   const rawEl = document.getElementById("playlist-raw");
   const beamEl = document.getElementById("playlist-beam");
-  const icaEl = document.getElementById("playlist-ica");
+  const separationEl = document.getElementById("playlist-separation");
   const audioEl = document.getElementById("player");
   const statusEl = document.getElementById("status");
   const metaEl = document.getElementById("meta");
@@ -422,7 +447,7 @@
     const layout = [
       ["raw", ["scene", "mic"]],
       ["beamforming", ["das", "mvdr"]],
-      ["ica", ["tdica", "auxiva"]],
+      ["separation", ["tdica", "duet", "auxiva"]],
     ];
 
     for (const [family, sections] of layout) {
@@ -487,7 +512,7 @@
 
     rawColEl.classList.toggle("hidden", !enabledFamilies.raw);
     beamColEl.classList.toggle("hidden", !enabledFamilies.beamforming);
-    icaColEl.classList.toggle("hidden", !enabledFamilies.ica);
+    separationColEl.classList.toggle("hidden", !enabledFamilies.separation);
 
     renderFamily(rawEl, "raw", [
       ["Scene recordings", "scene"],
@@ -499,10 +524,11 @@
       ["MVDR", "mvdr"],
     ], "No enabled beamforming tracks.", displayIndexMap);
 
-    renderFamily(icaEl, "ica", [
+    renderFamily(separationEl, "separation", [
       ["Time-domain ICA", "tdica"],
+      ["DUET", "duet"],
       ["AuxIVA", "auxiva"],
-    ], "No enabled ICA tracks.", displayIndexMap);
+    ], "No enabled separation tracks.", displayIndexMap);
   }
 
   function updateStatus() {
