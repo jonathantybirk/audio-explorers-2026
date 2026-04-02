@@ -1,8 +1,81 @@
-What's next algorithmically (the full list):
+Current status
 
-SRP-PHAT DoA ✓
-Delay-and-Sum + MVDR beamforming — in the demo now
-ICA — geometry-free source separation (Karl's suggestion)
-MUSIC — sharper DoA via eigendecomposition
-DUET — TF-domain separation exploiting single-source dominance
-Coherence-based source counting — estimate N talkers without separation
+- SRP-PHAT DoA ✓
+- Delay-and-Sum + MVDR beamforming ✓
+- ICA ✓
+  - time-domain FastICA
+  - AuxIVA + DoA labeling
+
+Recommended order from here
+
+1. MUSIC
+   - sharper DoA estimate than SRP-PHAT
+   - compare directly against SRP-PHAT on example_mixture.wav
+   - use later as angle estimator for beamforming
+
+2. DUET
+   - time-frequency separation under single-source-dominance assumptions
+   - useful comparison against ICA-style separation
+
+3. Coherence-based source counting
+   - estimate the number of active talkers without explicit separation
+
+Then revisit the physical assumptions
+
+4. Revisit geometry and speed of sound
+   - keep the current mic geometry for now
+   - do not assume the speaker angles from example_mixture.wav transfer to mixture.wav
+   - test whether the same mic geometry transfers to mixture.wav
+   - fit speed of sound jointly with inter-ear distance and front-back spacing
+   - check whether current beamforming weakness is mostly a geometry / c issue
+
+5. Revisit beamforming after MUSIC
+   - replace oracle steering with estimated angles where possible
+   - reevaluate Delay-and-Sum
+   - reevaluate MVDR
+
+Then tune hyperparameters
+
+6. Manual sweeps / small grid search first
+   - SRP-PHAT / MUSIC: angular resolution and peak picking
+   - beamforming: STFT size, hop, diagonal loading, covariance choices
+   - AuxIVA: STFT size, hop, number of iterations
+   - TD-ICA: tolerance and iteration limit
+
+7. Bayesian optimization later, only if a stable objective is defined
+   - do this after MUSIC / DUET / source counting are in place
+   - likely optimize a proxy score, not ground-truth separation
+   - candidate proxy terms:
+     - DoA agreement on example_mixture.wav
+     - peak sharpness / separation between directions
+     - source decorrelation / independence
+     - listening quality
+     - downstream ASR quality later
+
+Hybrid / in-between methods before full deep learning
+
+8. ILRMA or related NMF-guided BSS
+   - between classical BSS and learned methods
+
+9. Mask-based beamforming / neural-beamforming hybrids
+   - classical beamforming with learned or estimated masks
+
+10. Probabilistic tracking / EM-style spatial models
+   - source tracking rather than only framewise localization
+
+Deep learning stage
+
+11. Deep learning methods after the classical / hybrid pass
+   - start with modular hybrid systems, not one monolithic end-to-end model
+   - likely tasks:
+     - target speech extraction
+     - diarization / speaker embeddings
+     - ASR / multilingual transcription
+   - use the ideas/ notes as references when we get there
+
+Working assumptions to keep in mind
+
+- microphone geometry should transfer across recordings if the same hardware was used
+- speed of sound should be approximately stable across recordings
+- speaker positions should be treated as scene-specific and re-estimated
+- AuxIVA separation itself is geometry-free; only its post-hoc DoA labeling uses geometry
