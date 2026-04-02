@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beamforming Demo — example_mixture</title>
+  <style>
+    :root {
+      --bg:     #f4f1ea;
+      --panel:  #fffdf8;
+      --text:   #1f2933;
+      --muted:  #6b7280;
+      --accent: #0f766e;
+      --border: #d8d2c5;
+      --active: #dff5f2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #efe8db 0%, var(--bg) 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap  { max-width: 1100px; margin: 32px auto; padding: 0 16px 48px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    h1   { font-size: 26px; margin-bottom: 4px; }
+    .sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+
+    .status { font-weight: 600; color: var(--accent); min-height: 1.4em; margin-bottom: 4px; }
+    .meta   { color: var(--muted); font-size: 13px; min-height: 1.3em; margin-bottom: 14px; }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    button {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 10px;
+      padding: 9px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: border-color .15s, background .15s;
+    }
+    button:hover { border-color: var(--accent); background: var(--active); }
+
+    /* Three-column layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr 300px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* Shared playlist style */
+    .playlist-wrap h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .playlist {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: white;
+    }
+    .group-header {
+      padding: 7px 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      background: #f9f6ef;
+      border-bottom: 1px solid var(--border);
+    }
+    .item {
+      padding: 11px 14px;
+      border-bottom: 1px solid #ece7dc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background .1s;
+    }
+    .item:last-child { border-bottom: none; }
+    .item:hover      { background: #f5f0e6; }
+    .item.active     { background: var(--active); border-left: 3px solid var(--accent); padding-left: 11px; }
+    .item .num       { font-size: 12px; color: var(--muted); min-width: 22px; }
+    .item .name      { flex: 1; font-size: 14px; }
+    .badge {
+      font-size: 11px; padding: 2px 7px; border-radius: 99px;
+      background: #eee; color: #555;
+    }
+    .badge.das  { background: #dbeafe; color: #1e40af; }
+    .badge.mvdr { background: #d1fae5; color: #065f46; }
+    .badge.mic  { background: #fef3c7; color: #92400e; }
+    .badge.ref  { background: #f3e8ff; color: #6b21a8; }
+
+    /* Right column */
+    .right { display: flex; flex-direction: column; gap: 14px; }
+    audio  { width: 100%; border-radius: 8px; }
+
+    .polar-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: white;
+    }
+    .polar-wrap h3 {
+      padding: 8px 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: #f9f6ef;
+    }
+    .polar-wrap img { width: 100%; display: block; }
+
+    .legend {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      font-size: 12px; color: var(--muted);
+    }
+    .legend span { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>Beamforming Demo</h1>
+    <div class="sub">
+      Source: <code>example_mixture.wav</code> — four talkers at known positions 0° / 90° / 180° / 270°.<br>
+      D&S and MVDR work for any azimuth; these four angles are used because the ground truth is known here.
+    </div>
+
+    <div class="status" id="status">Ready</div>
+    <div class="meta"   id="meta"></div>
+
+    <div class="controls">
+      <button id="prevBtn">← Previous</button>
+      <button id="playBtn">▶ Play</button>
+      <button id="pauseBtn">⏸ Pause</button>
+      <button id="replayBtn">↺ Replay</button>
+      <button id="nextBtn">Next →</button>
+    </div>
+
+    <div class="layout">
+
+      <!-- Column 1: by direction -->
+      <div class="playlist-wrap">
+        <h2>By direction</h2>
+        <div class="playlist" id="playlist-dir"></div>
+      </div>
+
+      <!-- Column 2: by microphone -->
+      <div class="playlist-wrap">
+        <h2>By microphone (raw)</h2>
+        <div class="playlist" id="playlist-mic"></div>
+      </div>
+
+      <!-- Column 3: player + polar -->
+      <div class="right">
+        <div>
+          <audio id="player" controls preload="metadata"></audio>
+          <div class="meta" style="margin-top:8px;font-size:12px">
+            Double-click a track to play. Use buttons to step through.
+          </div>
+        </div>
+
+        <div class="legend">
+          <span><span class="dot" style="background:#6b21a8"></span> Reference</span>
+          <span><span class="dot" style="background:#1e40af"></span> Delay-and-Sum</span>
+          <span><span class="dot" style="background:#065f46"></span> MVDR</span>
+          <span><span class="dot" style="background:#92400e"></span> Raw mic</span>
+        </div>
+
+        <div class="polar-wrap">
+          <h3>SRP-PHAT — all 6 pairs</h3>
+          <img src="../analysis/srp_phat/spatial_spectrum/srp_phat_polar.png"
+               alt="SRP-PHAT polar plot — peaks at 0°/90°/180°/270°">
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const DIRECTIONS = [
+    { key: "0deg_front",   label: "0° — Front"   },
+    { key: "90deg_left",   label: "90° — Left"   },
+    { key: "180deg_back",  label: "180° — Back"  },
+    { key: "270deg_right", label: "270° — Right" },
+  ];
+  const METHODS = [
+    { key: "das",  label: "Delay-and-Sum" },
+    { key: "mvdr", label: "MVDR"          },
+  ];
+  const MICS = [
+    { key: "LF", label: "LF — Left Front",  desc: "closest to front-left sources" },
+    { key: "LR", label: "LR — Left Rear",   desc: "closest to back-left sources"  },
+    { key: "RF", label: "RF — Right Front", desc: "closest to front-right sources"},
+    { key: "RR", label: "RR — Right Rear",  desc: "closest to back-right sources" },
+  ];
+
+  // Build combined flat track list
+  const tracks = [];
+
+  // Reference first
+  tracks.push({ group: "ref", label: "Unprocessed mix",
+                sub: "all 4 channels averaged — no steering, no filtering",
+                badge: "ref", src: "audio/reference_mix.wav" });
+
+  for (const dir of DIRECTIONS)
+    for (const m of METHODS)
+      tracks.push({ group: "dir", label: `${dir.label} — ${m.label}`,
+                    badge: m.key, src: `audio/${m.key}_${dir.key}.wav`,
+                    dirKey: dir.key });
+
+  for (const mic of MICS)
+    tracks.push({ group: "mic", label: mic.label, sub: mic.desc,
+                  badge: "mic", src: `audio/mic_${mic.key}.wav` });
+
+  // ── Build direction playlist (reference + beamformed) ───────────
+  const dirEl = document.getElementById("playlist-dir");
+
+  // Reference track at top
+  const refTrack = tracks.find(t => t.group === "ref");
+  const refHdr = document.createElement("div");
+  refHdr.className = "group-header";
+  refHdr.textContent = "Reference";
+  dirEl.appendChild(refHdr);
+  dirEl.appendChild(makeItem(refTrack, tracks.indexOf(refTrack)));
+
+  let lastDir = null;
+  tracks.filter(t => t.group === "dir").forEach((track, _) => {
+    const globalIdx = tracks.indexOf(track);
+    const dirLabel  = DIRECTIONS.find(d => d.key === track.dirKey).label;
+    if (dirLabel !== lastDir) {
+      lastDir = dirLabel;
+      const hdr = document.createElement("div");
+      hdr.className = "group-header";
+      hdr.textContent = dirLabel;
+      dirEl.appendChild(hdr);
+    }
+    dirEl.appendChild(makeItem(track, globalIdx));
+  });
+
+  // ── Build microphone playlist ────────────────────────────────────
+  const micEl = document.getElementById("playlist-mic");
+  const hdr = document.createElement("div");
+  hdr.className = "group-header";
+  hdr.textContent = "No processing — single channel";
+  micEl.appendChild(hdr);
+  tracks.filter(t => t.group === "mic").forEach(track => {
+    micEl.appendChild(makeItem(track, tracks.indexOf(track)));
+  });
+
+  // ── Shared item builder ──────────────────────────────────────────
+  function makeItem(track, idx) {
+    const item = document.createElement("div");
+    item.className = "item";
+    item.dataset.index = idx;
+    item.innerHTML = `
+      <span class="num">${String(idx+1).padStart(2,"0")}</span>
+      <span class="name">${track.label}${track.sub ? `<br><span style="font-size:11px;color:#999">${track.sub}</span>` : ""}</span>
+      <span class="badge ${track.badge}">${track.badge.toUpperCase()}</span>`;
+    item.addEventListener("click", () => { selectIndex(idx); audioEl.play(); });
+    return item;
+  }
+
+  // ── Playback state ───────────────────────────────────────────────
+  const audioEl  = document.getElementById("player");
+  const statusEl = document.getElementById("status");
+  const metaEl   = document.getElementById("meta");
+  let index = 0;
+
+  function selectIndex(i) {
+    index = Math.max(0, Math.min(i, tracks.length - 1));
+    const t = tracks[index];
+    audioEl.src = t.src;
+    statusEl.textContent = "Ready";
+    metaEl.textContent   = `${t.label}  ·  ${t.src.split("/").pop()}`;
+    document.querySelectorAll(".item").forEach(el =>
+      el.classList.toggle("active", parseInt(el.dataset.index) === index));
+    document.querySelector(`.item[data-index="${index}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }
+
+  audioEl.addEventListener("play",  () =>
+    statusEl.textContent = `Playing: ${tracks[index].src.split("/").pop()}`);
+  audioEl.addEventListener("pause", () => {
+    if (audioEl.currentTime < audioEl.duration)
+      statusEl.textContent = `Paused: ${tracks[index].src.split("/").pop()}`;
+  });
+  audioEl.addEventListener("ended", () =>
+    statusEl.textContent = `Finished: ${tracks[index].src.split("/").pop()}`);
+
+  document.getElementById("prevBtn").addEventListener("click",   () => selectIndex(index - 1));
+  document.getElementById("nextBtn").addEventListener("click",   () => selectIndex(index + 1));
+  document.getElementById("playBtn").addEventListener("click",   () => audioEl.play());
+  document.getElementById("pauseBtn").addEventListener("click",  () => audioEl.pause());
+  document.getElementById("replayBtn").addEventListener("click", () => { audioEl.currentTime = 0; audioEl.play(); });
+
+  selectIndex(0);
+</script>
+</body>
+</html>

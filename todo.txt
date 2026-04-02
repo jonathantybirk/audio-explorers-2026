@@ -1,0 +1,8 @@
+What's next algorithmically (the full list):
+
+SRP-PHAT DoA ✓
+Delay-and-Sum + MVDR beamforming — in the demo now
+ICA — geometry-free source separation (Karl's suggestion)
+MUSIC — sharper DoA via eigendecomposition
+DUET — TF-domain separation exploiting single-source dominance
+Coherence-based source counting — estimate N talkers without separation

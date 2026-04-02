@@ -120,18 +120,25 @@ phi_rad    = np.deg2rad(azimuths)
 plot_angle = np.deg2rad(90 - azimuths)
 
 fig, ax = plt.subplots(figsize=(7, 7), subplot_kw={"projection": "polar"})
-ax.plot(plot_angle, power_norm, linewidth=1.2, color="steelblue")
-ax.fill(plot_angle, power_norm, alpha=0.25, color="steelblue")
 
-for expected_az, label in [(0, "front"), (90, "left"), (180, "back"), (270, "right")]:
-    pa = np.deg2rad(90 - expected_az)
+# Convention: 0°=front=top, 90°=left, counterclockwise matches our azimuth definition
+ax.set_theta_zero_location("N")
+ax.set_theta_direction(1)   # counterclockwise so 90° lands on the left
+
+az_rad = np.deg2rad(azimuths)
+ax.plot(az_rad, power_norm, linewidth=1.2, color="steelblue")
+ax.fill(az_rad, power_norm, alpha=0.25, color="steelblue")
+
+for expected_az, label in [(0, "Front\n0°"), (90, "Left\n90°"),
+                            (180, "Back\n180°"), (270, "Right\n270°")]:
+    pa = np.deg2rad(expected_az)
     ax.axvline(pa, color="crimson", linestyle="--", linewidth=1, alpha=0.7)
-    ax.text(pa, 1.12, label, ha="center", va="center", fontsize=9, color="crimson")
 
-ax.set_theta_zero_location("N")   # 0° at top
-ax.set_theta_direction(-1)        # clockwise
+ax.set_thetagrids([0, 90, 180, 270],
+                  labels=["Front\n0°", "Left\n90°", "Back\n180°", "Right\n270°"],
+                  fontsize=10, color="#c0392b")
 ax.set_rticks([])
-ax.set_title("SRP-PHAT spatial spectrum\nexample_mixture.wav", pad=20)
+ax.set_title("SRP-PHAT spatial spectrum — example_mixture.wav", pad=24)
 plt.tight_layout()
 polar_path = os.path.join(PLOT_DIR, "srp_phat_polar.png")
 plt.savefig(polar_path, dpi=150)
