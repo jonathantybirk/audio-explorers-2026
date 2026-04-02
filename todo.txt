@@ -9,36 +9,33 @@ Current status
 - ICA ✓
   - time-domain FastICA
   - AuxIVA + DoA labeling
+- Coherence-based source counting ✓
+  - short-block coherence rank + persistent SRP-PHAT peak counting
 
 Recommended order from here
 
-1. Coherence-based source counting
-   - estimate the number of active talkers without explicit separation
-
-Then revisit the physical assumptions
-
-2. Revisit geometry and speed of sound
+1. Revisit geometry and speed of sound
    - keep the current mic geometry for now
    - do not assume the speaker angles from example_mixture.wav transfer to mixture.wav
    - test whether the same mic geometry transfers to mixture.wav
    - fit speed of sound jointly with inter-ear distance and front-back spacing
    - check whether current beamforming weakness is mostly a geometry / c issue
 
-3. Revisit beamforming after MUSIC
+2. Revisit beamforming after MUSIC
    - replace oracle steering with estimated angles where possible
    - reevaluate Delay-and-Sum
    - reevaluate MVDR
 
 Then tune hyperparameters
 
-4. Manual sweeps / small grid search first
+3. Manual sweeps / small grid search first
    - SRP-PHAT / MUSIC: angular resolution and peak picking
    - beamforming: STFT size, hop, diagonal loading, covariance choices
    - DUET: mic pair, STFT size, delay bounds, clustering strategy
    - AuxIVA: STFT size, hop, number of iterations
    - TD-ICA: tolerance and iteration limit
 
-5. Bayesian optimization later, only if a stable objective is defined
+4. Bayesian optimization later, only if a stable objective is defined
    - do this after MUSIC / DUET / source counting are in place
    - likely optimize a proxy score, not ground-truth separation
    - candidate proxy terms:
@@ -50,18 +47,18 @@ Then tune hyperparameters
 
 Hybrid / in-between methods before full deep learning
 
-6. ILRMA or related NMF-guided BSS
+5. ILRMA or related NMF-guided BSS
    - between classical BSS and learned methods
 
-7. Mask-based beamforming / neural-beamforming hybrids
+6. Mask-based beamforming / neural-beamforming hybrids
    - classical beamforming with learned or estimated masks
 
-8. Probabilistic tracking / EM-style spatial models
+7. Probabilistic tracking / EM-style spatial models
    - source tracking rather than only framewise localization
 
 Deep learning stage
 
-9. Deep learning methods after the classical / hybrid pass
+8. Deep learning methods after the classical / hybrid pass
    - start with modular hybrid systems, not one monolithic end-to-end model
    - likely tasks:
      - target speech extraction

@@ -1,0 +1,34 @@
+{
+  "estimated_scene_source_count": 4,
+  "estimated_scene_angles_deg": [
+    2.0,
+    90.0,
+    180.0,
+    270.0
+  ],
+  "estimated_scene_cardinals_deg": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "median_effective_rank": 1.8980758716267019,
+  "p90_effective_rank": 2.03267339569608,
+  "max_effective_rank": 2.089587826182414,
+  "rounded_dominant_count_histogram": {
+    "1": 10,
+    "2": 290
+  },
+  "parameters": {
+    "nfft": 1024,
+    "hop": 256,
+    "block_frames": 24,
+    "block_hop_frames": 12,
+    "freq_range_hz": [
+      300.0,
+      3500.0
+    ],
+    "block_peaks": 2,
+    "min_peak_separation_deg": 35.0
+  }
+}
