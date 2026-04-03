@@ -8,7 +8,13 @@ Completed
 - DUET ✓ (2-channel attenuation-delay masking on LF-RR)
 - Time-domain ICA ✓ (FastICA — baseline, geometry-free)
 - AuxIVA ✓ (frequency-domain ICA, currently best separation method)
+- ILRMA ✓ (NMF-guided BSS)
+- Mask-based MVDR ✓ (ILRMA TF masks as spatial covariance)
 - Coherence-based source counting ✓
+- mixture.wav demo + estimated-angle pipeline ✓
+  - SRP-PHAT re-estimates mixture.wav angles from signal
+  - beamforming uses estimated angles
+  - demo labels mixture positions as estimates, not ground truth
 
 What our methods agree on about example_mixture.wav speaker positions:
   Front:  ~3°  (all methods; slightly left of 0°)
@@ -18,42 +24,29 @@ What our methods agree on about example_mixture.wav speaker positions:
 
 Next up
 
-1. ILRMA ← in progress
-   - NMF-guided BSS, biggest upgrade over AuxIVA before deep learning
-   - pra.bss.ilrma() — same pipeline as AuxIVA
-
-2. Mask-based MVDR
-   - use AuxIVA/ILRMA TF masks as per-source spatial covariance
-   - much better than blocking-matrix MVDR
-   - no longer needs oracle steering angles
-
-3. SRP-PHAT + all methods on mixture.wav
-   - re-estimate angles from signal (no ground truth)
+1. Finish mixture.wav coverage across all methods
+   - DUET is still example_mixture.wav-only
    - verify geometry transfers
-   - beamforming uses estimated angles; AuxIVA/ILRMA/DUET are geometry-free
-
-4. Demo: mixture.wav tab
-   - tab switcher between example_mixture and mixture
-   - estimated angles labeled as estimates, not ground truth
+   - beamforming already uses estimated angles; AuxIVA/ILRMA are already geometry-free
 
 Geometry and calibration
 
-5. Extend geometry fit to also fit speed of sound (3D grid: D, L, C)
+2. Extend geometry fit to also fit speed of sound (3D grid: D, L, C)
    - L=1.6 cm is the weak link
    - fitting C jointly may resolve front/back ambiguity
 
-6. Bootstrapped geometry refinement
+3. Bootstrapped geometry refinement
    - use MUSIC peaks as calibration angles instead of assuming exact 0/90/180/270
    - tighter geometry → better MVDR/DAS steering
 
 Hyperparameter tuning
 
-7. Define objective metrics first
+4. Define objective metrics first
    - DoA angular error on example_mixture (ground truth ≈ 3°/90°/178°/270°)
    - source decorrelation (pairwise cross-correlation of separated outputs)
    - ASR quality as proxy later
 
-8. Manual grid sweeps on HPC
+5. Manual grid sweeps on HPC
    - STFT size: 256/512/1024/2048/4096
    - AuxIVA/ILRMA: iterations (30→100→200), IP1 vs IP2
    - AuxIVA informed init from MUSIC steering vectors
@@ -63,17 +56,17 @@ Hyperparameter tuning
 
 Hybrid methods
 
-9. ILRMA/AuxIVA-guided MVDR (multi-pass)
+6. ILRMA/AuxIVA-guided MVDR (multi-pass)
    - use separated source images as oracle masks for MVDR
 
-10. Probabilistic spatial tracking / EM model
-    - GMM over TDoA observations — useful for mixture.wav with unknown positions
+7. Probabilistic spatial tracking / EM model
+   - GMM over TDoA observations — useful for mixture.wav with unknown positions
 
 Deep learning (after classical/hybrid plateau)
 
-11. Modular hybrid: classical beamforming + learned mask
-12. End-to-end: Conv-TasNet, SepFormer — pretrained, fine-tune if needed
-    - use ideas/ notes when we get here
+8. Modular hybrid: classical beamforming + learned mask
+9. End-to-end: Conv-TasNet, SepFormer — pretrained, fine-tune if needed
+   - use ideas/ notes when we get here
 
 Working assumptions
 
