@@ -9,8 +9,8 @@ Q2. Do room acoustics transfer between example_mixture.wav and mixture.wav?
 
 Immediate next
 
-- Evaluate the first Spatial EM / GMM prototype on example_mixture.wav
-- If it is promising enough, turn its soft masks into MVDR next
+- Evaluate the first Spatial EM / GMM separator and Spatial-EM mask MVDR on example_mixture.wav
+- If the mask-MVDR variant is promising, decide whether to port it to mixture.wav
 
 Completed today
 
@@ -28,6 +28,12 @@ Completed today
 ✓ First Spatial EM / GMM prototype implemented on example_mixture.wav
   Uses low-frequency TDoA bins for EM/GMM, then soft spatial masks for 4-channel reconstruction
   Current note: learned GMM templates collapse front/back, so mask construction falls back to SRP-seeded angles
+✓ Spatial-EM mask MVDR implemented on example_mixture.wav
+  Added as a hidden experimental Beamforming subsection in the demo
+  Current note: still uses the same SRP-seeded template fallback as the separator
+✓ Diarization-guided MVDR implemented on example_mixture.wav and mixture.wav
+  Added as a hidden experimental Beamforming subsection in the demo
+  Current note: pyannote collapses both scenes to 2 speakers; mean DNSMOS 1.67 (example) / 1.92 (mixture)
 ✓ DUET on mixture.wav — finds 90°, 119°, 184°, 270°; misses front speaker entirely
   (LF-RR pair has poor angular resolution near 0° — known DUET limitation)
 ✓ DL on mixture.wav — SepFormer-WHAMR: MOS 2.61, cross-corr 0.235 (vs 0.099 on example)
@@ -40,21 +46,18 @@ Next up — hackathon priority
    - Improve the front/back split so the method does not need SRP-template fallback
    - Decide whether it is demo-worthy as its own separator
 
-2. If the EM / GMM masks look promising: convert them into MVDR masks
-   - EM-mask MVDR is probably the fastest high-upside hybrid method to demo
-   - Keeps the story simple: probabilistic spatial clustering -> soft masks -> beamforming
+2. Evaluate the Spatial-EM mask MVDR result on example_mixture.wav
+   - Compare against current ILRMA-mask MVDR and plain MVDR
+   - Decide whether it is worth porting to mixture.wav and exposing more prominently in the demo
 
-3. Only after that: decide whether ILRMA-guided MVDR still adds something
+3. Decide whether diarization-guided MVDR is worth keeping in the demo
+   - It is implemented and hidden by default now
+   - Current result is weak: pyannote only finds 2 speakers on both files
+
+4. Only after that: decide whether ILRMA-guided MVDR still adds something
    - Useful fallback hybrid if EM/GMM underperforms
 
 Lower priority / optional
-
-4. Diarization-guided MVDR (analysis/dl_separation/diarization_mvdr.py)
-   - Ready to run, needs HuggingFace token:
-       a. Accept https://huggingface.co/pyannote/speaker-diarization-3.1
-       b. Accept https://huggingface.co/pyannote/segmentation-3.0
-       c. Token at https://huggingface.co/settings/tokens
-       d. export HF_TOKEN=hf_...  (add to ~/.zshrc)
 
 5. Fine-tune SepFormer 2-src → 4-src (analysis/dl_separation/hpc_finetune_sepformer4.py)
    - Script ready. Needs: WSJ0-4Mix (LDC) or Libri4Mix (free), pip install speechbrain

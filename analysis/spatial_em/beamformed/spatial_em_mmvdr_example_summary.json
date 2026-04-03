@@ -1,0 +1,32 @@
+{
+  "wav": "example_mixture.wav",
+  "method": "Mask-MVDR using Spatial EM / GMM masks",
+  "num_sources": 4,
+  "nfft": 1024,
+  "hop": 256,
+  "srp_init_angles_deg": [
+    4.0,
+    90.0,
+    180.0,
+    270.0
+  ],
+  "gmm_template_angles_deg": [
+    178.5,
+    90.0,
+    177.0,
+    270.5
+  ],
+  "mask_template_source": "srp_seeded_fallback",
+  "estimated_source_directions_deg": [
+    0.0,
+    90.0,
+    176.0,
+    270.0
+  ],
+  "estimated_source_cardinals_deg": [
+    0,
+    90,
+    180,
+    270
+  ]
+}

@@ -259,6 +259,8 @@
         { key: "das",    header: "Delay-and-Sum", secDefault: false },
         { key: "mvdr",   header: "MVDR",          secDefault: false },
         { key: "mmvdr",  header: "Mask-MVDR",     secDefault: true },
+        { key: "mmvdr_em", header: "Mask-MVDR (Spatial EM)", secDefault: false },
+        { key: "diar_mvdr", header: "Diarization-MVDR", secDefault: false },
     ]},
     { id: "bss",      label: "Source Separation",colDefault: true, sections: [
         { key: "duet",   header: "DUET",          secDefault: false },
@@ -300,6 +302,17 @@
     ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
   ])
     allTracks.push(track(`ex_mmvdr_${dirKey}`, EX, "mmvdr", `${dirLabel} — Mask-MVDR`, `est. ${doa}°`, "mmvdr", `../analysis/mask_mvdr/beamformed/mmvdr_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","0"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","176"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_mmvdr_em_${dirKey}`, EX, "mmvdr_em", `${dirLabel} — Mask-MVDR (Spatial EM)`, `prototype · est. ${doa}° · Spatial EM masks`, "mmvdr", `../analysis/spatial_em/beamformed/spatial_em_mmvdr_example_${dirKey}.wav`));
+
+  for (const [spk, mos, activity] of [
+    ["SPEAKER_00","1.62","92%"],["SPEAKER_01","1.71","85%"]
+  ])
+    allTracks.push(track(`ex_diar_mvdr_${spk}`, EX, "diar_mvdr", `Speaker ${spk.replace("SPEAKER_", "")} — Diarization-MVDR`, `pyannote diarization · 2 speakers found · activity ${activity} · DNSMOS ${mos}`, "mvdr", `../analysis/dl_separation/separated/example_diar_mvdr_${spk}.wav`));
 
   for (let i = 1; i <= 4; i++)
     allTracks.push(track(`ex_tdica_${i}`, EX, "tdica", `TD-ICA component ${i}`, "FastICA component", "tdica", `../analysis/ica/separated/tdica_component_${i}.wav`));
@@ -391,6 +404,11 @@
     allTracks.push(track(`mix_ilrma_${n}`,  MIX, "ilrma",  `Source ${n} ${lbl} — ILRMA`,     `default hp · est. ${lbl}`, "ilrma",  `${MA}/ilrma_source_${n}_${key}.wav`));
   }
 
+  for (const [spk, mos, activity] of [
+    ["SPEAKER_00","1.86","98%"],["SPEAKER_01","1.97","49%"]
+  ])
+    allTracks.push(track(`mix_diar_mvdr_${spk}`, MIX, "diar_mvdr", `Speaker ${spk.replace("SPEAKER_", "")} — Diarization-MVDR`, `pyannote diarization · 2 speakers found · activity ${activity} · DNSMOS ${mos}`, "mvdr", `../analysis/dl_separation/separated/mixture_diar_mvdr_${spk}.wav`));
+
   for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
     allTracks.push(track(`mix_auxiva_${n}`, MIX, "auxiva", `Source ${n} ${lbl} — AuxIVA`, `default hp · est. ${lbl} · hop=1024 iter=30`, "auxiva", `${MA}/auxiva_source_${n}_${key}.wav`));
 
@@ -437,6 +455,8 @@
       sub: `<code>example_mixture.wav</code> — four talkers at known positions 0° / 90° / 180° / 270°.<br>
             Beamforming uses those angles. DoA methods estimate ~3° / 90° / ~178° / 270°.<br>
             Spatial EM prototype currently recovers 0° / 90° / ~176° / 270°, but its mask templates still fall back to SRP-seeded angles.<br>
+            Spatial-EM mask MVDR is included as an experimental beamforming subsection, hidden by default.<br>
+            Diarization-guided MVDR is also included as an experimental beamforming subsection, but pyannote only found 2 speakers on this file (mean DNSMOS 1.67).<br>
             When multiple versions exist, the default clip set stays visible and alternate/tuned variants are kept in hidden subsections.`,
       polarTitle: "SRP-PHAT — example_mixture",
       polarSrc:   "../analysis/srp_phat/spatial_spectrum/srp_phat_polar.png",
@@ -449,7 +469,8 @@
             AuxIVA transfer from <code>example_mixture.wav</code>: same DoA set on the current run.<br>
             When multiple versions exist, the default clip set stays visible and alternate/tuned variants are kept in hidden subsections.<br>
             ILRMA default DoA: ~0° / ~134° / 180° / ~313°.<br>
-            ILRMA transfer from <code>example_mixture.wav</code>: ~134° / ~178° / ~313° / ~358°.`,
+            ILRMA transfer from <code>example_mixture.wav</code>: ~134° / ~178° / ~313° / ~358°.<br>
+            Diarization-guided MVDR is included as an experimental beamforming subsection, but pyannote only found 2 speakers on this file as well (mean DNSMOS 1.92).`,
       polarTitle: "SRP-PHAT — mixture",
       polarSrc:   "../analysis/srp_phat/mixture_spectrum/srp_phat_mixture_polar.png",
       polarNote:  "SRP-PHAT spatial spectrum of <code>mixture.wav</code>. Estimated peaks: ~2°, 90°, 270°, 358°.",

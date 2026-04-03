@@ -1,0 +1,20 @@
+{
+  "method": "Diarization-guided MVDR",
+  "wav_key": "mixture",
+  "num_speakers": 2,
+  "mean_dnsmos_ovrl": 1.9189515772158228,
+  "speakers": [
+    {
+      "speaker": "SPEAKER_00",
+      "activity_percent": 98.33795166015625,
+      "dnsmos_ovrl": 1.8638280454032248,
+      "output_wav": "analysis/dl_separation/separated/mixture_diar_mvdr_SPEAKER_00.wav"
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "activity_percent": 49.41828155517578,
+      "dnsmos_ovrl": 1.9740751090284208,
+      "output_wav": "analysis/dl_separation/separated/mixture_diar_mvdr_SPEAKER_01.wav"
+    }
+  ]
+}

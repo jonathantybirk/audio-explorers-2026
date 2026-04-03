@@ -41,6 +41,7 @@ Outputs saved to analysis/dl_separation/separated/diar_mvdr_*.wav
 import argparse
 import json
 import os
+import re
 import sys
 import types
 import warnings
@@ -51,16 +52,30 @@ from scipy.signal import resample_poly
 
 warnings.filterwarnings("ignore")
 
-# ── torchaudio shim (ABI-incompatible with torch 2.9 on Python 3.14) ─────────
+# ── torchaudio shim fallback ──────────────────────────────────────────────────
 def _stub_torchaudio():
     fake = types.ModuleType("torchaudio")
-    for sub in ["transforms", "functional", "sox_effects", "backend", "pipelines"]:
+    for sub in [
+        "transforms",
+        "functional",
+        "sox_effects",
+        "backend",
+        "pipelines",
+        "models",
+        "compliance",
+    ]:
         m = types.ModuleType(f"torchaudio.{sub}")
         setattr(fake, sub, m)
         sys.modules[f"torchaudio.{sub}"] = m
+    kaldi = types.ModuleType("torchaudio.compliance.kaldi")
+    sys.modules["torchaudio.compliance.kaldi"] = kaldi
+    fake.compliance.kaldi = kaldi
     sys.modules["torchaudio"] = fake
 
-_stub_torchaudio()
+try:
+    import torchaudio  # noqa: F401
+except Exception:
+    _stub_torchaudio()
 
 import torch
 _orig_load = torch.load
@@ -198,12 +213,54 @@ def apply_mvdr(X, target_mask, n_samples):
 
 # ── Pyannote diarization → frame-level masks ──────────────────────────────────
 def diarize(wav_path, hf_token):
+    from huggingface_hub.errors import GatedRepoError
     from pyannote.audio import Pipeline
-    pipeline = Pipeline.from_pretrained(
-        "pyannote/speaker-diarization-3.1",
-        use_auth_token=hf_token,
-    )
-    return pipeline(wav_path)
+    try:
+        pipeline = Pipeline.from_pretrained(
+            "pyannote/speaker-diarization-3.1",
+            token=hf_token,
+        )
+    except GatedRepoError as exc:
+        repo_match = re.search(r"Access to model ([^ ]+) is restricted", str(exc))
+        repo_name = repo_match.group(1) if repo_match else "a required pyannote model"
+        raise RuntimeError(
+            "Hugging Face login succeeded, but this account does not have access "
+            f"to `{repo_name}` yet. Open the model page and "
+            "request/accept access, then re-run the script."
+        ) from exc
+    sr, data = load_wav(wav_path)
+    mono = data[:, 0] if data.ndim == 2 else data
+    waveform = torch.from_numpy(mono.astype(np.float32)).unsqueeze(0)
+    output = pipeline({"waveform": waveform, "sample_rate": sr})
+    if hasattr(output, "speaker_diarization"):
+        return output.speaker_diarization
+    return output
+
+
+def resolve_hf_token(cli_token=None):
+    if cli_token:
+        return cli_token
+
+    env_token = os.environ.get("HF_TOKEN")
+    if env_token:
+        return env_token
+
+    try:
+        from huggingface_hub import get_token
+        cached = get_token()
+        if cached:
+            return cached
+    except Exception:
+        pass
+
+    token_path = os.path.expanduser("~/.cache/huggingface/token")
+    if os.path.exists(token_path):
+        with open(token_path, "r", encoding="utf-8") as f:
+            cached = f.read().strip()
+        if cached:
+            return cached
+
+    return None
 
 
 def diarization_to_masks(diarization, n_frames, sr, hop):
@@ -251,28 +308,50 @@ def run(wav_key, hf_token):
         return dnsmos.run(sig16 / peak * 0.9, 16000, return_df=False)["ovrl_mos"]
 
     mos_scores = []
+    speaker_summaries = []
     for spk in speakers:
         mask = masks[spk]
-        print(f"  Speaker {spk}: activity {mask.mean()*100:.1f}% of frames")
+        activity_pct = float(mask.mean() * 100.0)
+        print(f"  Speaker {spk}: activity {activity_pct:.1f}% of frames")
         separated = apply_mvdr(X, mask, n_samples)
         mos       = score(separated)
         mos_scores.append(mos)
         out_path  = os.path.join(OUT_DIR, f"{wav_key}_diar_mvdr_{spk}.wav")
         save_wav(out_path, separated, sr)
         print(f"    DNSMOS ovrl_mos: {mos:.3f}")
+        speaker_summaries.append({
+            "speaker": spk,
+            "activity_percent": activity_pct,
+            "dnsmos_ovrl": float(mos),
+            "output_wav": os.path.relpath(out_path, REPO_ROOT),
+        })
 
-    print(f"\n  Mean DNSMOS: {np.mean(mos_scores):.3f}")
+    mean_mos = float(np.mean(mos_scores))
+    summary = {
+        "method": "Diarization-guided MVDR",
+        "wav_key": wav_key,
+        "num_speakers": len(speakers),
+        "mean_dnsmos_ovrl": mean_mos,
+        "speakers": speaker_summaries,
+    }
+    summary_path = os.path.join(OUT_DIR, f"{wav_key}_diar_mvdr_summary.json")
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    print(f"    saved  {os.path.relpath(summary_path)}")
+
+    print(f"\n  Mean DNSMOS: {mean_mos:.3f}")
     print("  (Compare against ILRMA baseline — run analysis/ilrma/ilrma_separation.py)")
 
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Diarization-guided MVDR beamforming")
     p.add_argument("--wav", choices=["example", "mixture"], default="example")
-    p.add_argument("--hf-token", default=os.environ.get("HF_TOKEN"),
-                   help="HuggingFace token (or set HF_TOKEN env var)")
+    p.add_argument("--hf-token", default=None,
+                   help="HuggingFace token (optional if you already ran `hf auth login`)")
     args = p.parse_args()
+    hf_token = resolve_hf_token(args.hf_token)
 
-    if not args.hf_token:
+    if not hf_token:
         print("""
 ERROR: HuggingFace token required for pyannote models.
 
@@ -281,10 +360,15 @@ Setup (one-time):
      and accept the user conditions (requires HF account).
   2. Also accept: https://huggingface.co/pyannote/segmentation-3.0
   3. Get a token at https://huggingface.co/settings/tokens
-  4. Run: export HF_TOKEN=hf_your_token_here
-     (add to ~/.zshrc to persist)
+  4. Run either:
+     - hf auth login
+     - or export HF_TOKEN=hf_your_token_here
   5. Re-run this script.
 """)
         sys.exit(1)
 
-    run(args.wav, args.hf_token)
+    try:
+        run(args.wav, hf_token)
+    except RuntimeError as exc:
+        print(f"\nERROR: {exc}")
+        sys.exit(1)
