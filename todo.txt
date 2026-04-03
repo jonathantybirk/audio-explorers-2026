@@ -1,74 +1,84 @@
 Current status
 
+Completed
 - SRP-PHAT DoA ✓
-- Delay-and-Sum + MVDR beamforming ✓
-- MUSIC ✓
-  - block-aggregated wideband MUSIC
-- DUET ✓
-  - 2-channel attenuation-delay masking on LF-RR
-- ICA ✓
-  - time-domain FastICA
-  - AuxIVA + DoA labeling
+  - peaks at ~3°, 90°, ~178°, 270° (not exactly 0/90/180/270 — case angles are approximate)
+- Delay-and-Sum + MVDR beamforming ✓ (oracle angles)
+- MUSIC ✓ (block-aggregated wideband)
+- DUET ✓ (2-channel attenuation-delay masking on LF-RR)
+- Time-domain ICA ✓ (FastICA — baseline, geometry-free)
+- AuxIVA ✓ (frequency-domain ICA, currently best separation method)
 - Coherence-based source counting ✓
-  - short-block coherence rank + persistent SRP-PHAT peak counting
 
-Recommended order from here
+What our methods agree on about example_mixture.wav speaker positions:
+  Front:  ~3°  (all methods; slightly left of 0°)
+  Left:   90°  (exact, all methods agree)
+  Back:   ~178° (DUET: 176°, others: 180°)
+  Right:  270° (exact, all methods agree)
 
-1. Revisit geometry and speed of sound
-   - keep the current mic geometry for now
-   - do not assume the speaker angles from example_mixture.wav transfer to mixture.wav
-   - test whether the same mic geometry transfers to mixture.wav
-   - fit speed of sound jointly with inter-ear distance and front-back spacing
-   - check whether current beamforming weakness is mostly a geometry / c issue
+Next up
 
-2. Revisit beamforming after MUSIC
-   - replace oracle steering with estimated angles where possible
-   - reevaluate Delay-and-Sum
-   - reevaluate MVDR
+1. ILRMA ← in progress
+   - NMF-guided BSS, biggest upgrade over AuxIVA before deep learning
+   - pra.bss.ilrma() — same pipeline as AuxIVA
 
-Then tune hyperparameters
+2. Mask-based MVDR
+   - use AuxIVA/ILRMA TF masks as per-source spatial covariance
+   - much better than blocking-matrix MVDR
+   - no longer needs oracle steering angles
 
-3. Manual sweeps / small grid search first
-   - SRP-PHAT / MUSIC: angular resolution and peak picking
-   - beamforming: STFT size, hop, diagonal loading, covariance choices
-   - DUET: mic pair, STFT size, delay bounds, clustering strategy
-   - AuxIVA: STFT size, hop, number of iterations
-   - TD-ICA: tolerance and iteration limit
+3. SRP-PHAT + all methods on mixture.wav
+   - re-estimate angles from signal (no ground truth)
+   - verify geometry transfers
+   - beamforming uses estimated angles; AuxIVA/ILRMA/DUET are geometry-free
 
-4. Bayesian optimization later, only if a stable objective is defined
-   - do this after MUSIC / DUET / source counting are in place
-   - likely optimize a proxy score, not ground-truth separation
-   - candidate proxy terms:
-     - DoA agreement on example_mixture.wav
-     - peak sharpness / separation between directions
-     - source decorrelation / independence
-     - listening quality
-     - downstream ASR quality later
+4. Demo: mixture.wav tab
+   - tab switcher between example_mixture and mixture
+   - estimated angles labeled as estimates, not ground truth
 
-Hybrid / in-between methods before full deep learning
+Geometry and calibration
 
-5. ILRMA or related NMF-guided BSS
-   - between classical BSS and learned methods
+5. Extend geometry fit to also fit speed of sound (3D grid: D, L, C)
+   - L=1.6 cm is the weak link
+   - fitting C jointly may resolve front/back ambiguity
 
-6. Mask-based beamforming / neural-beamforming hybrids
-   - classical beamforming with learned or estimated masks
+6. Bootstrapped geometry refinement
+   - use MUSIC peaks as calibration angles instead of assuming exact 0/90/180/270
+   - tighter geometry → better MVDR/DAS steering
 
-7. Probabilistic tracking / EM-style spatial models
-   - source tracking rather than only framewise localization
+Hyperparameter tuning
 
-Deep learning stage
+7. Define objective metrics first
+   - DoA angular error on example_mixture (ground truth ≈ 3°/90°/178°/270°)
+   - source decorrelation (pairwise cross-correlation of separated outputs)
+   - ASR quality as proxy later
 
-8. Deep learning methods after the classical / hybrid pass
-   - start with modular hybrid systems, not one monolithic end-to-end model
-   - likely tasks:
-     - target speech extraction
-     - diarization / speaker embeddings
-     - ASR / multilingual transcription
-   - use the ideas/ notes as references when we get there
+8. Manual grid sweeps on HPC
+   - STFT size: 256/512/1024/2048/4096
+   - AuxIVA/ILRMA: iterations (30→100→200), IP1 vs IP2
+   - AuxIVA informed init from MUSIC steering vectors
+   - DUET: mic pair, freq range, GMM vs k-means
+   - MVDR: diagonal loading, covariance window
+   - MUSIC: block size, freq range, active sources per block
 
-Working assumptions to keep in mind
+Hybrid methods
 
-- microphone geometry should transfer across recordings if the same hardware was used
-- speed of sound should be approximately stable across recordings
-- speaker positions should be treated as scene-specific and re-estimated
-- AuxIVA separation itself is geometry-free; only its post-hoc DoA labeling uses geometry
+9. ILRMA/AuxIVA-guided MVDR (multi-pass)
+   - use separated source images as oracle masks for MVDR
+
+10. Probabilistic spatial tracking / EM model
+    - GMM over TDoA observations — useful for mixture.wav with unknown positions
+
+Deep learning (after classical/hybrid plateau)
+
+11. Modular hybrid: classical beamforming + learned mask
+12. End-to-end: Conv-TasNet, SepFormer — pretrained, fine-tune if needed
+    - use ideas/ notes when we get here
+
+Working assumptions
+
+- Mic geometry (D, L) transfers across recordings (same hardware)
+- Speed of sound approximately stable (same room)
+- Speaker positions are scene-specific — re-estimate per file
+- AuxIVA/ILRMA separation is geometry-free; DoA labeling uses geometry
+- example_mixture.wav is the calibration ground truth; mixture.wav is the actual target

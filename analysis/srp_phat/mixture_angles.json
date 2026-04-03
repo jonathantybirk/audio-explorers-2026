@@ -1,0 +1,11 @@
+{
+  "wav": "mixture.wav",
+  "method": "SRP-PHAT all 6 mic pairs",
+  "estimated_angles_deg": [
+    2.0,
+    90.0,
+    270.0,
+    358.0
+  ],
+  "azimuth_convention": "degrees, 0=front, 90=left, 180=back, 270=right"
+}

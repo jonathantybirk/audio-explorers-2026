@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Beamforming + Separation Demo — example_mixture</title>
+  <title>Demo</title>
   <style>
     :root {
       --bg:     #f4f1ea;
@@ -21,113 +21,105 @@
       color: var(--text);
       min-height: 100vh;
     }
-    .wrap  { max-width: 1380px; margin: 32px auto; padding: 0 16px 48px; }
+    .wrap { max-width: 100%; margin: 32px auto; padding: 0 16px 48px; }
     .panel {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto;
     }
-    h1   { font-size: 26px; margin-bottom: 4px; }
-    .sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+    .header-bar {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 16px; margin-bottom: 14px;
+    }
+    .title-block { min-width: 0; }
+    h1 { font-size: 26px; margin-bottom: 4px; }
 
+    /* ── Tabs ───────────────────────────────────────────── */
+    .tabs { display: flex; gap: 4px; align-self: flex-start; flex-wrap: wrap; }
+    .tab {
+      padding: 9px 18px; border: 1px solid var(--border);
+      border-radius: 999px; font-size: 14px; font-weight: 500;
+      cursor: pointer; background: #f7f3ea; color: var(--muted);
+      white-space: nowrap;
+      transition: color .15s, background .15s, border-color .15s, box-shadow .15s;
+    }
+    .tab:hover { color: var(--text); background: #f0ede6; }
+    .tab.active {
+      color: var(--accent); background: var(--panel);
+      border-color: var(--border);
+      box-shadow: 0 3px 12px rgba(15,118,110,0.08);
+    }
+    .tab .tab-badge {
+      display: inline-block; margin-left: 6px; font-size: 10px;
+      padding: 1px 6px; border-radius: 99px;
+      background: #e0f2f1; color: var(--accent); font-weight: 600;
+    }
+
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+    .sub code { font-size: 12px; background: #f0ede6; padding: 1px 5px; border-radius: 4px; }
     .status { font-weight: 600; color: var(--accent); min-height: 1.4em; margin-bottom: 4px; }
     .meta   { color: var(--muted); font-size: 13px; min-height: 1.3em; margin-bottom: 14px; }
 
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 16px;
+    /* ── Column toggles ─────────────────────────────────── */
+    .col-toggles {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      align-items: center; margin-bottom: 16px;
     }
     .filter-title {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-      margin-right: 4px;
+      font-size: 12px; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted); margin-right: 4px;
     }
-    .algo-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid var(--border);
-      background: white;
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 13px;
-      color: var(--text);
-      cursor: pointer;
-      user-select: none;
+    .col-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border); background: white;
+      border-radius: 999px; padding: 5px 10px;
+      font-size: 12px; color: var(--text); cursor: pointer; user-select: none;
     }
-    .algo-toggle input { accent-color: var(--accent); }
+    .col-toggle input { accent-color: var(--accent); }
+
+    /* ── Main layout ────────────────────────────────────── */
     .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 320px;
-      gap: 16px;
-      align-items: start;
+      display: inline-flex;
+      gap: 12px;
+      align-items: flex-start;
+      max-width: 100%;
+    }
+    .playlists-scroll {
+      flex: 0 1 auto;
+      min-width: 0;
+      width: fit-content;
+      max-width: calc(100vw - 380px);
+      overflow-x: auto;
+      padding-bottom: 6px;
     }
     .playlists {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
-      align-items: start;
+      display: flex; gap: 12px; align-items: start;
+      width: max-content; /* let it grow beyond scroll container */
     }
-
-    /* Shared playlist style */
+    .playlist-wrap { width: 230px; flex-shrink: 0; }
     .playlist-wrap h2 {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-      margin-bottom: 8px;
+      font-size: 13px; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--muted); margin-bottom: 8px;
     }
-    .playlist-wrap.hidden { display: none; }
-    .section-filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .section-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      border: 1px solid var(--border);
-      background: #fff;
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 11px;
-      color: var(--muted);
-      cursor: pointer;
-      user-select: none;
-    }
-    .section-toggle input { accent-color: var(--accent); }
     .playlist {
       border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      background: white;
+      border-radius: 12px; overflow: hidden; background: white;
     }
     .group-header {
-      padding: 7px 14px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-      background: #f9f6ef;
+      padding: 7px 14px; font-size: 11px;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted); background: #f9f6ef;
       border-bottom: 1px solid var(--border);
     }
     .item {
-      padding: 11px 14px;
-      border-bottom: 1px solid #ece7dc;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: background .1s;
+      padding: 11px 14px; border-bottom: 1px solid #ece7dc;
+      cursor: pointer; display: flex; align-items: center;
+      gap: 10px; transition: background .1s;
     }
     .item:last-child { border-bottom: none; }
     .item:hover      { background: #f5f0e6; }
@@ -138,433 +130,405 @@
       font-size: 11px; padding: 2px 7px; border-radius: 99px;
       background: #eee; color: #555;
     }
-    .badge.das  { background: #dbeafe; color: #1e40af; }
-    .badge.mvdr { background: #d1fae5; color: #065f46; }
+    .badge.das    { background: #dbeafe; color: #1e40af; }
+    .badge.mvdr   { background: #d1fae5; color: #065f46; }
+    .badge.mmvdr  { background: #ccfbf1; color: #0f766e; }
     .badge.auxiva { background: #fed7aa; color: #9a3412; }
+    .badge.ilrma  { background: #fde68a; color: #78350f; }
     .badge.tdica  { background: #fecdd3; color: #9f1239; }
     .badge.duet   { background: #e0e7ff; color: #4338ca; }
-    .badge.mic  { background: #fef3c7; color: #92400e; }
-    .badge.raw  { background: #e5e7eb; color: #374151; }
+    .badge.mic    { background: #fef3c7; color: #92400e; }
+    .badge.raw    { background: #e5e7eb; color: #374151; }
 
-    /* Right column */
-    .right { display: flex; flex-direction: column; gap: 14px; }
+    /* ── Right panel ────────────────────────────────────── */
+    .right { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
     audio  { width: 100%; border-radius: 8px; }
-
     .polar-wrap {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      background: white;
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; background: white;
     }
     .polar-wrap h3 {
-      padding: 8px 14px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: var(--muted);
-      border-bottom: 1px solid var(--border);
-      background: #f9f6ef;
+      padding: 8px 14px; font-size: 11px;
+      text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+      border-bottom: 1px solid var(--border); background: #f9f6ef;
     }
     .polar-wrap img { width: 100%; display: block; }
     .plot-note {
-      padding: 10px 14px 12px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-      border-top: 1px solid #ece7dc;
-      background: #fff;
+      padding: 10px 14px 12px; color: var(--muted);
+      font-size: 12px; line-height: 1.45;
+      border-top: 1px solid #ece7dc; background: #fff;
     }
-    .empty-list {
-      padding: 14px;
-      color: var(--muted);
-      font-size: 13px;
-      background: white;
-    }
-
-    .legend {
-      display: flex; gap: 10px; flex-wrap: wrap;
-      font-size: 12px; color: var(--muted);
-    }
+    .empty-list { padding: 14px; color: var(--muted); font-size: 13px; background: white; }
+    .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
     .legend span { display: flex; align-items: center; gap: 4px; }
     .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
-    @media (max-width: 1200px) {
-      .layout { grid-template-columns: 1fr; }
-    }
     @media (max-width: 900px) {
-      .playlists { grid-template-columns: 1fr; }
+      .header-bar { flex-direction: column; }
+      .layout { flex-direction: column; }
+      .playlists-scroll { width: 100%; max-width: 100%; }
+      .right { width: 100%; }
     }
   </style>
 </head>
 <body>
 <div class="wrap">
   <div class="panel">
-    <h1>Beamforming + Separation Demo</h1>
-    <div class="sub">
-      Source: <code>example_mixture.wav</code> — four talkers at known positions 0° / 90° / 180° / 270°.<br>
-      Tracks are grouped into Raw, Beamforming, and Separation.
+    <div class="header-bar">
+      <div class="title-block">
+        <h1>Demo</h1>
+      </div>
+      <div class="tabs">
+        <button class="tab active" id="tab-example" onclick="switchRecording('example')">
+          example_mixture.wav <span class="tab-badge">known positions</span>
+        </button>
+        <button class="tab" id="tab-mixture" onclick="switchRecording('mixture')">
+          mixture.wav <span class="tab-badge">estimated positions</span>
+        </button>
+      </div>
     </div>
 
+    <div class="sub" id="recording-sub"></div>
     <div class="status" id="status">Ready</div>
     <div class="meta"   id="meta"></div>
 
-    <div class="filters">
-      <span class="filter-title">Show Columns</span>
-      <label class="algo-toggle"><input type="checkbox" data-family="raw" checked> Raw</label>
-      <label class="algo-toggle"><input type="checkbox" data-family="beamforming" checked> Beamforming</label>
-      <label class="algo-toggle"><input type="checkbox" data-family="separation" checked> Separation</label>
+    <div class="col-toggles" id="col-toggles">
+      <span class="filter-title">Columns</span>
     </div>
 
     <div class="layout">
-      <div class="playlists">
-        <div class="playlist-wrap" id="col-raw">
-          <h2>Raw</h2>
-          <div class="section-filters">
-            <label class="section-toggle"><input type="checkbox" data-section="scene" checked> Scene</label>
-            <label class="section-toggle"><input type="checkbox" data-section="mic" checked> Mics</label>
-          </div>
-          <div class="playlist" id="playlist-raw"></div>
-        </div>
-
-        <div class="playlist-wrap" id="col-beamforming">
-          <h2>Beamforming</h2>
-          <div class="section-filters">
-            <label class="section-toggle"><input type="checkbox" data-section="das" checked> D&amp;S</label>
-            <label class="section-toggle"><input type="checkbox" data-section="mvdr" checked> MVDR</label>
-          </div>
-          <div class="playlist" id="playlist-beam"></div>
-        </div>
-
-        <div class="playlist-wrap" id="col-separation">
-          <h2>Separation</h2>
-          <div class="section-filters">
-            <label class="section-toggle"><input type="checkbox" data-section="tdica" checked> TD-ICA</label>
-            <label class="section-toggle"><input type="checkbox" data-section="duet" checked> DUET</label>
-            <label class="section-toggle"><input type="checkbox" data-section="auxiva" checked> AuxIVA</label>
-          </div>
-          <div class="playlist" id="playlist-separation"></div>
-        </div>
+      <div class="playlists-scroll">
+        <div class="playlists" id="playlists"></div>
       </div>
-
       <div class="right">
         <div>
           <audio id="player" controls preload="metadata"></audio>
           <div class="meta" style="margin-top:8px;font-size:12px">
-            Click a new track to play it from the beginning. Clicking the current track resumes or pauses it. Double-clicking the current track restarts it.
+            Click to play. Click again to pause/resume. Double-click to restart.
           </div>
         </div>
-
         <div class="legend">
-          <span><span class="dot" style="background:#6b7280"></span> Raw scene</span>
-          <span><span class="dot" style="background:#1e40af"></span> Delay-and-Sum</span>
+          <span><span class="dot" style="background:#6b7280"></span> Raw</span>
+          <span><span class="dot" style="background:#1e40af"></span> D&S</span>
           <span><span class="dot" style="background:#065f46"></span> MVDR</span>
+          <span><span class="dot" style="background:#0f766e"></span> Mask-MVDR</span>
+          <span><span class="dot" style="background:#9a3412"></span> AuxIVA</span>
+          <span><span class="dot" style="background:#78350f"></span> ILRMA</span>
           <span><span class="dot" style="background:#4338ca"></span> DUET</span>
-          <span><span class="dot" style="background:#b45309"></span> AuxIVA</span>
           <span><span class="dot" style="background:#be123c"></span> TD-ICA</span>
-          <span><span class="dot" style="background:#92400e"></span> Raw mic</span>
+          <span><span class="dot" style="background:#92400e"></span> Mic</span>
         </div>
-
         <div class="polar-wrap">
-          <h3>SRP-PHAT — example scene</h3>
-          <img src="../analysis/srp_phat/spatial_spectrum/srp_phat_polar.png" alt="SRP-PHAT polar plot for example_mixture.wav">
-          <div class="plot-note">
-            SRP-PHAT spatial spectrum of <code>example_mixture.wav</code>.
-          </div>
+          <h3 id="polar-title"></h3>
+          <img id="polar-img" alt="SRP-PHAT polar">
+          <div class="plot-note" id="polar-note"></div>
         </div>
       </div>
-
     </div>
   </div>
 </div>
 
 <script>
   const CLICK_DELAY_MS = 150;
-  const DIRECTIONS = [
-    { key: "0deg_front",   label: "0° — Front"   },
-    { key: "90deg_left",   label: "90° — Left"   },
-    { key: "180deg_back",  label: "180° — Back"  },
-    { key: "270deg_right", label: "270° — Right" },
-  ];
-  const METHODS = [
-    { key: "das",  label: "Delay-and-Sum" },
-    { key: "mvdr", label: "MVDR"          },
-  ];
-  const MICS = [
-    { key: "LF", label: "LF — Left Front",  desc: "single microphone channel" },
-    { key: "LR", label: "LR — Left Rear",   desc: "single microphone channel" },
-    { key: "RF", label: "RF — Right Front", desc: "single microphone channel" },
-    { key: "RR", label: "RR — Right Rear",  desc: "single microphone channel" },
-  ];
-  const AUXIVA_SOURCES = [
-    { id: "auxiva_0", label: "AuxIVA source 1", desc: "estimated DoA 4° (nearest 0° front)",
-      src: "../analysis/ica/separated/ica_0deg_front.wav" },
-    { id: "auxiva_1", label: "AuxIVA source 2", desc: "estimated DoA 90° (left)",
-      src: "../analysis/ica/separated/ica_90deg_left.wav" },
-    { id: "auxiva_2", label: "AuxIVA source 3", desc: "estimated DoA 180° (back)",
-      src: "../analysis/ica/separated/ica_180deg_back.wav" },
-    { id: "auxiva_3", label: "AuxIVA source 4", desc: "estimated DoA 270° (right)",
-      src: "../analysis/ica/separated/ica_270deg_right.wav" },
-  ];
-  const TDICA_SOURCES = [
-    { id: "tdica_0", label: "TD-ICA component 1",
-      desc: "time-domain FastICA component",
-      src: "../analysis/ica/separated/tdica_component_1.wav" },
-    { id: "tdica_1", label: "TD-ICA component 2",
-      desc: "time-domain FastICA component",
-      src: "../analysis/ica/separated/tdica_component_2.wav" },
-    { id: "tdica_2", label: "TD-ICA component 3",
-      desc: "time-domain FastICA component",
-      src: "../analysis/ica/separated/tdica_component_3.wav" },
-    { id: "tdica_3", label: "TD-ICA component 4",
-      desc: "time-domain FastICA component",
-      src: "../analysis/ica/separated/tdica_component_4.wav" },
-  ];
-  const DUET_SOURCES = [
-    { id: "duet_0", label: "DUET source 1", desc: "estimated DoA 356° (nearest 0° front)",
-      src: "../analysis/duet/separated/duet_0deg_front.wav" },
-    { id: "duet_1", label: "DUET source 2", desc: "estimated DoA 90° (left)",
-      src: "../analysis/duet/separated/duet_90deg_left.wav" },
-    { id: "duet_2", label: "DUET source 3", desc: "estimated DoA 176° (nearest 180° back)",
-      src: "../analysis/duet/separated/duet_180deg_back.wav" },
-    { id: "duet_3", label: "DUET source 4", desc: "estimated DoA 270° (right)",
-      src: "../analysis/duet/separated/duet_270deg_right.wav" },
-  ];
 
-  const enabledFamilies = {
-    raw: true,
-    beamforming: true,
-    separation: true,
-  };
-
-  const enabledSections = {
-    scene: true,
-    mic: true,
-    das: true,
-    mvdr: true,
-    tdica: true,
-    duet: true,
-    auxiva: true,
-  };
-
+  // ── Track definitions ───────────────────────────────────────────────────────
   const allTracks = [];
-
-  allTracks.push({
-    id: "raw_example_mixture",
-    family: "raw",
-    group: "rawscene",
-    section: "scene",
-    label: "example_mixture.wav",
-    sub: "original 4-channel reference scene from data/raw/",
-    badge: "raw",
-    src: "../data/raw/example_mixture.wav",
-  });
-
-  for (const mic of MICS) {
-    allTracks.push({
-      id: `mic_${mic.key}`,
-      family: "raw",
-      group: "mic",
-      section: "mic",
-      label: mic.label,
-      sub: mic.desc,
-      badge: "mic",
-      src: `audio/mic_${mic.key}.wav`,
-    });
+  function track(id, rec, col, label, sub, badge, src) {
+    return { id, rec, col, label, sub, badge, src };
   }
 
-  for (const dir of DIRECTIONS) {
-    for (const m of METHODS) {
-      allTracks.push({
-        id: `${m.key}_${dir.key}`,
-        family: "beamforming",
-        group: m.key,
-        section: m.key,
-        label: `${dir.label} — ${m.label}`,
-        sub: `steered to ${dir.label.toLowerCase()}`,
-        badge: m.key,
-        src: `audio/${m.key}_${dir.key}.wav`,
-      });
-    }
+  // ── Column definitions ───────────────────────────────────────────────────────
+  // colDefault: whether the column is visible by default
+  // sections[].secDefault: whether the section is shown by default within the column
+  const ALL_COLS = [
+    { id: "raw",      label: "Raw",             colDefault: true, sections: [
+        { key: "scene",  header: "Scene",         secDefault: true },
+        { key: "mic",    header: "Microphones",   secDefault: true },
+    ]},
+    { id: "beamform", label: "Beamforming",      colDefault: true, sections: [
+        { key: "das",    header: "Delay-and-Sum", secDefault: false },
+        { key: "mvdr",   header: "MVDR",          secDefault: false },
+        { key: "mmvdr",  header: "Mask-MVDR",     secDefault: true },
+    ]},
+    { id: "bss",      label: "Source Separation",colDefault: true, sections: [
+        { key: "duet",   header: "DUET",          secDefault: false },
+        { key: "tdica",  header: "Time-domain ICA",secDefault: false },
+        { key: "auxiva", header: "AuxIVA",        secDefault: true },
+        { key: "ilrma",  header: "ILRMA",         secDefault: true },
+    ]},
+  ];
+
+  // ── EXAMPLE MIXTURE ─────────────────────────────────────────────────────────
+  const EX = "example";
+  const A  = "audio";
+
+  allTracks.push(track("ex_raw_scene", EX, "scene",
+    "example_mixture.wav", "original 4-channel mixture", "raw", "../data/raw/example_mixture.wav"));
+
+  for (const [k, lbl] of [["LF","Left Front"],["LR","Left Rear"],["RF","Right Front"],["RR","Right Rear"]])
+    allTracks.push(track(`ex_mic_${k}`, EX, "mic", `${k} — ${lbl}`, "single mic channel", "mic", `${A}/mic_${k}.wav`));
+
+  for (const [dirKey, dirLabel] of [
+    ["0deg_front","0° Front"],["90deg_left","90° Left"],
+    ["180deg_back","180° Back"],["270deg_right","270° Right"]
+  ]) {
+    allTracks.push(track(`ex_das_${dirKey}`,  EX, "das",  `${dirLabel} — D&S`,  `steered to ${dirLabel}`, "das",  `${A}/das_${dirKey}.wav`));
+    allTracks.push(track(`ex_mvdr_${dirKey}`, EX, "mvdr", `${dirLabel} — MVDR`, `steered to ${dirLabel}`, "mvdr", `${A}/mvdr_${dirKey}.wav`));
   }
 
-  for (const track of TDICA_SOURCES) {
-    allTracks.push({
-      ...track,
-      family: "separation",
-      group: "tdica",
-      section: "tdica",
-      badge: "tdica",
-      sub: track.desc,
-    });
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_mmvdr_${dirKey}`, EX, "mmvdr", `${dirLabel} — Mask-MVDR`, `est. ${doa}°`, "mmvdr", `../analysis/mask_mvdr/beamformed/mmvdr_${dirKey}.wav`));
+
+  for (let i = 1; i <= 4; i++)
+    allTracks.push(track(`ex_tdica_${i}`, EX, "tdica", `TD-ICA component ${i}`, "FastICA component", "tdica", `../analysis/ica/separated/tdica_component_${i}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","356"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","176"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_duet_${dirKey}`, EX, "duet", `${dirLabel} — DUET`, `est. ${doa}°`, "duet", `../analysis/duet/separated/duet_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
+  ]) {
+    allTracks.push(track(`ex_auxiva_${dirKey}`, EX, "auxiva", `${dirLabel} — AuxIVA`, `est. ${doa}°`, "auxiva", `../analysis/ica/separated/ica_${dirKey}.wav`));
+    allTracks.push(track(`ex_ilrma_${dirKey}`,  EX, "ilrma",  `${dirLabel} — ILRMA`,  `est. ${doa}°`, "ilrma",  `../analysis/ilrma/separated/ilrma_${dirKey}.wav`));
   }
 
-  for (const track of DUET_SOURCES) {
-    allTracks.push({
-      ...track,
-      family: "separation",
-      group: "duet",
-      section: "duet",
-      badge: "duet",
-      sub: track.desc,
-    });
+  // ── MIXTURE ─────────────────────────────────────────────────────────────────
+  const MIX = "mixture";
+  const MA  = "audio_mixture";
+
+  allTracks.push(track("mix_raw_scene", MIX, "scene",
+    "mixture.wav", "original 4-channel mixture", "raw", "../data/raw/mixture.wav"));
+
+  for (const [k, lbl] of [["LF","Left Front"],["LR","Left Rear"],["RF","Right Front"],["RR","Right Rear"]])
+    allTracks.push(track(`mix_mic_${k}`, MIX, "mic", `${k} — ${lbl}`, "single mic channel", "mic", `${MA}/mic_${k}.wav`));
+
+  for (const [key, lbl] of [["2deg","~2°"],["90deg","90°"],["270deg","270°"],["358deg","~358°"]]) {
+    allTracks.push(track(`mix_das_${key}`,  MIX, "das",  `${lbl} — D&S`,  `SRP-PHAT est. ${lbl}`, "das",  `${MA}/das_${key}.wav`));
+    allTracks.push(track(`mix_mvdr_${key}`, MIX, "mvdr", `${lbl} — MVDR`, `SRP-PHAT est. ${lbl}`, "mvdr", `${MA}/mvdr_${key}.wav`));
   }
 
-  for (const track of AUXIVA_SOURCES) {
-    allTracks.push({
-      ...track,
-      family: "separation",
-      group: "auxiva",
-      section: "auxiva",
-      badge: "auxiva",
-      sub: track.desc,
-    });
+  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"0deg","~0°"],[4,"134deg","~134°"]]) {
+    allTracks.push(track(`mix_mmvdr_${n}`,  MIX, "mmvdr",  `Source ${n} ${lbl} — Mask-MVDR`, `est. ${lbl}`, "mmvdr",  `${MA}/mmvdr_source_${n}_${key}.wav`));
+    allTracks.push(track(`mix_ilrma_${n}`,  MIX, "ilrma",  `Source ${n} ${lbl} — ILRMA`,     `est. ${lbl}`, "ilrma",  `${MA}/ilrma_source_${n}_${key}.wav`));
   }
 
-  const rawColEl = document.getElementById("col-raw");
-  const beamColEl = document.getElementById("col-beamforming");
-  const separationColEl = document.getElementById("col-separation");
-  const rawEl = document.getElementById("playlist-raw");
-  const beamEl = document.getElementById("playlist-beam");
-  const separationEl = document.getElementById("playlist-separation");
-  const audioEl = document.getElementById("player");
-  const statusEl = document.getElementById("status");
-  const metaEl = document.getElementById("meta");
-  let selectedTrackId = allTracks[0].id;
+  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
+    allTracks.push(track(`mix_auxiva_${n}`, MIX, "auxiva", `Source ${n} ${lbl} — AuxIVA`, `est. ${lbl}`, "auxiva", `${MA}/auxiva_source_${n}_${key}.wav`));
+
+  // ── Per-recording metadata ──────────────────────────────────────────────────
+  const RECORDING_META = {
+    example: {
+      sub: `<code>example_mixture.wav</code> — four talkers at known positions 0° / 90° / 180° / 270°.<br>
+            Beamforming uses those angles. DoA methods estimate ~3° / 90° / ~178° / 270°.`,
+      polarTitle: "SRP-PHAT — example_mixture",
+      polarSrc:   "../analysis/srp_phat/spatial_spectrum/srp_phat_polar.png",
+      polarNote:  "SRP-PHAT spatial spectrum of <code>example_mixture.wav</code>. DoA estimates: ~3°, 90°, ~178°, 270°. Known positions: 0°, 90°, 180°, 270°.",
+    },
+    mixture: {
+      sub: `<code>mixture.wav</code> — talker positions unknown, estimated from the signal.<br>
+            SRP-PHAT: ~2° / 90° / 270° / 358°. AuxIVA / ILRMA: ~0° / ~134° / ~178° / ~313°.`,
+      polarTitle: "SRP-PHAT — mixture",
+      polarSrc:   "../analysis/srp_phat/mixture_spectrum/srp_phat_mixture_polar.png",
+      polarNote:  "SRP-PHAT spatial spectrum of <code>mixture.wav</code>. Estimated peaks: ~2°, 90°, 270°, 358°.",
+    },
+  };
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  let currentRecording = "example";
+  let enabledCols = {};    // col.id → boolean
+  let enabledSecs = {};    // section key → boolean
+  let selectedTrackId = null;
   let clickTimer = null;
 
-  function getTrackById(trackId) {
-    return allTracks.find(track => track.id === trackId) || null;
+  const audioEl   = document.getElementById("player");
+  const statusEl  = document.getElementById("status");
+  const metaEl    = document.getElementById("meta");
+  const playlistsEl = document.getElementById("playlists");
+  const togglesEl   = document.getElementById("col-toggles");
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function tracksForRecording(rec) {
+    return allTracks.filter(t => t.rec === rec);
+  }
+
+  function colHasTracks(colId, rec) {
+    const col = ALL_COLS.find(c => c.id === colId);
+    const sectionKeys = col.sections.map(s => s.key);
+    return allTracks.some(t => t.rec === rec && sectionKeys.includes(t.col));
   }
 
   function getVisibleTracks() {
-    return allTracks.filter(track =>
-      enabledFamilies[track.family] && enabledSections[track.section]
+    return allTracks.filter(t =>
+      t.rec === currentRecording && enabledCols[colForSection(t.col)] && enabledSecs[t.col]
     );
   }
 
-  function getRenderedTracks() {
-    const ordered = [];
-    const layout = [
-      ["raw", ["scene", "mic"]],
-      ["beamforming", ["das", "mvdr"]],
-      ["separation", ["tdica", "duet", "auxiva"]],
-    ];
+  function colForSection(secKey) {
+    for (const col of ALL_COLS)
+      if (col.sections.some(s => s.key === secKey)) return col.id;
+    return null;
+  }
 
-    for (const [family, sections] of layout) {
-      if (!enabledFamilies[family]) continue;
-      for (const sectionName of sections) {
-        if (!enabledSections[sectionName]) continue;
-        ordered.push(...allTracks.filter(track =>
-          track.family === family && track.section === sectionName
-        ));
-      }
+  // ── Build column toggles ─────────────────────────────────────────────────────
+  function buildToggles() {
+    togglesEl.innerHTML = `<span class="filter-title">Columns</span>`;
+    for (const col of ALL_COLS) {
+      if (!colHasTracks(col.id, currentRecording)) continue;
+      const label = document.createElement("label");
+      label.className = "col-toggle";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!enabledCols[col.id];
+      cb.addEventListener("change", () => {
+        enabledCols[col.id] = cb.checked;
+        syncSelectionAfterVisibilityChange();
+        renderPlaylists();
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(" " + col.label));
+      togglesEl.appendChild(label);
     }
-    return ordered;
   }
 
-  function appendHeader(parent, label) {
-    const hdr = document.createElement("div");
-    hdr.className = "group-header";
-    hdr.textContent = label;
-    parent.appendChild(hdr);
+  // ── Render all columns ──────────────────────────────────────────────────────
+  function renderPlaylists() {
+    // Global numbering across all fully-visible tracks
+    const idxMap = new Map(getVisibleTracks().map((t, i) => [t.id, i]));
+
+    playlistsEl.innerHTML = "";
+    for (const col of ALL_COLS) {
+      if (!colHasTracks(col.id, currentRecording)) continue;
+      if (!enabledCols[col.id]) continue;
+
+      const wrap = document.createElement("div");
+      wrap.className = "playlist-wrap";
+
+      // Column header + section toggles (only for sections that exist here)
+      const h2 = document.createElement("h2");
+      h2.textContent = col.label;
+      wrap.appendChild(h2);
+
+      const existingSecs = col.sections.filter(s =>
+        allTracks.some(t => t.rec === currentRecording && t.col === s.key)
+      );
+      if (existingSecs.length > 1) {
+        const secToggles = document.createElement("div");
+        secToggles.style.cssText = "display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;";
+        for (const sec of existingSecs) {
+          const lbl = document.createElement("label");
+          lbl.className = "col-toggle";
+          lbl.style.fontSize = "11px";
+          lbl.style.padding  = "3px 8px";
+          const cb = document.createElement("input");
+          cb.type    = "checkbox";
+          cb.checked = !!enabledSecs[sec.key];
+          cb.addEventListener("change", () => {
+            enabledSecs[sec.key] = cb.checked;
+            syncSelectionAfterVisibilityChange();
+            renderPlaylists();
+          });
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(" " + sec.header));
+          secToggles.appendChild(lbl);
+        }
+        wrap.appendChild(secToggles);
+      }
+
+      const list = document.createElement("div");
+      list.className = "playlist";
+
+      for (const sec of col.sections) {
+        if (!enabledSecs[sec.key]) continue;
+        const secTracks = allTracks.filter(t =>
+          t.rec === currentRecording && t.col === sec.key
+        );
+        if (!secTracks.length) continue;
+        if (existingSecs.length > 1) {
+          const hdr = document.createElement("div");
+          hdr.className = "group-header";
+          hdr.textContent = sec.header;
+          list.appendChild(hdr);
+        }
+        for (const t of secTracks)
+          list.appendChild(makeItem(t, idxMap.get(t.id) ?? 0));
+      }
+
+      if (!list.childElementCount) {
+        const empty = document.createElement("div");
+        empty.className = "empty-list";
+        empty.textContent = "No sections enabled.";
+        list.appendChild(empty);
+      }
+
+      wrap.appendChild(list);
+      playlistsEl.appendChild(wrap);
+    }
   }
 
-  function appendEmpty(parent, text) {
-    const empty = document.createElement("div");
-    empty.className = "empty-list";
-    empty.textContent = text;
-    parent.appendChild(empty);
-  }
-
-  function makeItem(track, displayIndex) {
+  function makeItem(t, displayIdx) {
     const item = document.createElement("div");
     item.className = "item";
-    item.dataset.trackId = track.id;
-    if (track.id === selectedTrackId) item.classList.add("active");
+    if (t.id === selectedTrackId) item.classList.add("active");
+    item.dataset.trackId = t.id;
     item.innerHTML = `
-      <span class="num">${String(displayIndex + 1).padStart(2, "0")}</span>
-      <span class="name">${track.label}${track.sub ? `<br><span style="font-size:11px;color:#999">${track.sub}</span>` : ""}</span>
-      <span class="badge ${track.badge}">${track.badge.toUpperCase()}</span>`;
-    item.addEventListener("click", () => scheduleTrackClick(track.id));
-    item.addEventListener("dblclick", () => handleTrackDoubleClick(track.id));
+      <span class="num">${String(displayIdx + 1).padStart(2, "0")}</span>
+      <span class="name">${t.label}${t.sub
+        ? `<br><span style="font-size:11px;color:#999">${t.sub}</span>` : ""}</span>
+      <span class="badge ${t.badge}">${t.badge.toUpperCase()}</span>`;
+    item.addEventListener("click",    () => scheduleTrackClick(t.id));
+    item.addEventListener("dblclick", () => handleTrackDoubleClick(t.id));
     return item;
   }
 
-  function renderFamily(parent, family, sections, emptyText, displayIndexMap) {
-    const visibleTracks = getVisibleTracks().filter(track => track.family === family);
+  // ── Tab switching ───────────────────────────────────────────────────────────
+  function switchRecording(rec) {
+    currentRecording = rec;
+    document.getElementById("tab-example").classList.toggle("active", rec === "example");
+    document.getElementById("tab-mixture").classList.toggle("active", rec === "mixture");
 
-    parent.innerHTML = "";
-    for (const [label, sectionName] of sections) {
-      const tracks = visibleTracks.filter(track => track.section === sectionName);
-      if (!tracks.length) continue;
-      appendHeader(parent, label);
-      for (const track of tracks)
-        parent.appendChild(makeItem(track, displayIndexMap.get(track.id)));
+    // Reset to defaults
+    enabledCols = {};
+    enabledSecs = {};
+    for (const col of ALL_COLS) {
+      enabledCols[col.id] = col.colDefault && colHasTracks(col.id, rec);
+      for (const sec of col.sections)
+        enabledSecs[sec.key] = sec.secDefault;
     }
-    if (!parent.childElementCount)
-      appendEmpty(parent, emptyText);
+
+    const meta = RECORDING_META[rec];
+    document.getElementById("recording-sub").innerHTML = meta.sub;
+    document.getElementById("polar-title").textContent = meta.polarTitle;
+    document.getElementById("polar-img").src           = meta.polarSrc;
+    document.getElementById("polar-note").innerHTML    = meta.polarNote;
+
+    buildToggles();
+    syncSelectionAfterVisibilityChange();
+    renderPlaylists();
   }
 
-  function renderPlaylists() {
-    const displayIndexMap = new Map(
-      getRenderedTracks().map((track, idx) => [track.id, idx])
-    );
-
-    rawColEl.classList.toggle("hidden", !enabledFamilies.raw);
-    beamColEl.classList.toggle("hidden", !enabledFamilies.beamforming);
-    separationColEl.classList.toggle("hidden", !enabledFamilies.separation);
-
-    renderFamily(rawEl, "raw", [
-      ["Scene recordings", "scene"],
-      ["Microphone channels", "mic"],
-    ], "No enabled raw tracks.", displayIndexMap);
-
-    renderFamily(beamEl, "beamforming", [
-      ["Delay-and-Sum", "das"],
-      ["MVDR", "mvdr"],
-    ], "No enabled beamforming tracks.", displayIndexMap);
-
-    renderFamily(separationEl, "separation", [
-      ["Time-domain ICA", "tdica"],
-      ["DUET", "duet"],
-      ["AuxIVA", "auxiva"],
-    ], "No enabled separation tracks.", displayIndexMap);
-  }
-
+  // ── Status ──────────────────────────────────────────────────────────────────
   function updateStatus() {
-    const track = getTrackById(selectedTrackId);
-
-    if (!track) {
-      if (getVisibleTracks().length) {
-        statusEl.textContent = "No clip selected";
-        metaEl.textContent = "Click a clip to play it.";
-      } else {
-        statusEl.textContent = "No tracks enabled";
-        metaEl.textContent = "Enable at least one column or section.";
-      }
+    const t = allTracks.find(t => t.id === selectedTrackId) || null;
+    if (!t) {
+      statusEl.textContent = "No clip selected";
+      metaEl.textContent   = "Click a clip to play it.";
       return;
     }
-
-    metaEl.textContent = `${track.label}  ·  ${track.src.split("/").pop()}`;
-
-    if (!audioEl.paused) {
-      statusEl.textContent = `Playing: ${track.src.split("/").pop()}`;
-      return;
-    }
-
-    if (audioEl.ended || (audioEl.duration && audioEl.currentTime >= audioEl.duration)) {
-      statusEl.textContent = `Finished: ${track.src.split("/").pop()}`;
-      return;
-    }
-
-    if (audioEl.currentTime > 0) {
-      statusEl.textContent = `Paused: ${track.src.split("/").pop()}`;
-      return;
-    }
-
-    statusEl.textContent = "Ready";
+    metaEl.textContent = `${t.label}  ·  ${t.src.split("/").pop()}`;
+    if (!audioEl.paused)              statusEl.textContent = `Playing: ${t.src.split("/").pop()}`;
+    else if (audioEl.ended)           statusEl.textContent = `Finished: ${t.src.split("/").pop()}`;
+    else if (audioEl.currentTime > 0) statusEl.textContent = `Paused: ${t.src.split("/").pop()}`;
+    else                              statusEl.textContent = "Ready";
   }
 
+  // ── Selection ───────────────────────────────────────────────────────────────
   function clearSelection() {
     selectedTrackId = null;
     audioEl.pause();
@@ -575,28 +539,14 @@
   }
 
   function syncSelectionAfterVisibilityChange() {
-    const visibleTracks = getVisibleTracks();
-
-    if (!visibleTracks.length) {
-      clearSelection();
-      return;
-    }
-
-    if (selectedTrackId && !visibleTracks.some(track => track.id === selectedTrackId)) {
-      clearSelection();
-      return;
-    }
-
-    renderPlaylists();
-    updateStatus();
+    const vis = getVisibleTracks();
+    if (selectedTrackId && !vis.some(t => t.id === selectedTrackId)) clearSelection();
+    else updateStatus();
   }
 
-  function selectTrack(trackId) {
-    const t = getVisibleTracks().find(track => track.id === trackId) || null;
-
-    if (!t)
-      return null;
-
+  function selectTrack(id) {
+    const t = getVisibleTracks().find(t => t.id === id);
+    if (!t) return null;
     selectedTrackId = t.id;
     if (audioEl.getAttribute("src") !== t.src) {
       audioEl.src = t.src;
@@ -604,58 +554,35 @@
     }
     renderPlaylists();
     updateStatus();
-    document.querySelector(`.item[data-track-id="${selectedTrackId}"]`)
-      ?.scrollIntoView({ block: "nearest" });
+    document.querySelector(`.item[data-track-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
     return t;
   }
 
-  audioEl.addEventListener("play", updateStatus);
-  audioEl.addEventListener("pause", updateStatus);
-  audioEl.addEventListener("ended", updateStatus);
+  audioEl.addEventListener("play",   updateStatus);
+  audioEl.addEventListener("pause",  updateStatus);
+  audioEl.addEventListener("ended",  updateStatus);
 
-  function handleSingleTrackClick(trackId) {
-    if (trackId === selectedTrackId) {
-      if (audioEl.paused) audioEl.play();
-      else audioEl.pause();
-      return;
-    }
-
-    selectTrack(trackId);
+  function handleSingleTrackClick(id) {
+    if (id === selectedTrackId) { audioEl.paused ? audioEl.play() : audioEl.pause(); return; }
+    selectTrack(id);
     audioEl.currentTime = 0;
     audioEl.play();
   }
 
-  function scheduleTrackClick(trackId) {
+  function scheduleTrackClick(id) {
     clearTimeout(clickTimer);
-    clickTimer = setTimeout(() => {
-      handleSingleTrackClick(trackId);
-      clickTimer = null;
-    }, CLICK_DELAY_MS);
+    clickTimer = setTimeout(() => { handleSingleTrackClick(id); clickTimer = null; }, CLICK_DELAY_MS);
   }
 
-  function handleTrackDoubleClick(trackId) {
-    clearTimeout(clickTimer);
-    clickTimer = null;
-    selectTrack(trackId);
+  function handleTrackDoubleClick(id) {
+    clearTimeout(clickTimer); clickTimer = null;
+    if (id !== selectedTrackId) selectTrack(id);
     audioEl.currentTime = 0;
     audioEl.play();
   }
 
-  document.querySelectorAll(".algo-toggle input").forEach(input => {
-    input.addEventListener("change", () => {
-      enabledFamilies[input.dataset.family] = input.checked;
-      syncSelectionAfterVisibilityChange();
-    });
-  });
-
-  document.querySelectorAll(".section-toggle input").forEach(input => {
-    input.addEventListener("change", () => {
-      enabledSections[input.dataset.section] = input.checked;
-      syncSelectionAfterVisibilityChange();
-    });
-  });
-
-  selectTrack(selectedTrackId);
+  // Initial render
+  switchRecording("example");
 </script>
 </body>
 </html>
