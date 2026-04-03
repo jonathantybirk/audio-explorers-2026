@@ -1,0 +1,47 @@
+{
+  "wav": "example_mixture.wav",
+  "method": "Spatial EM / GMM over low-frequency TDoA bins",
+  "num_sources": 4,
+  "nfft": 1024,
+  "hop": 256,
+  "fit_low_freq_range_hz": [
+    300.0,
+    900.0
+  ],
+  "mask_full_freq_range_hz": [
+    250.0,
+    5000.0
+  ],
+  "srp_init_angles_deg": [
+    4.0,
+    90.0,
+    180.0,
+    270.0
+  ],
+  "gmm_component_angles_deg": [
+    178.5,
+    90.0,
+    177.0,
+    270.5
+  ],
+  "mask_template_source": "srp_seeded_fallback",
+  "estimated_source_directions_deg": [
+    0.0,
+    90.0,
+    176.0,
+    270.0
+  ],
+  "estimated_source_cardinals_deg": [
+    0,
+    90,
+    180,
+    270
+  ],
+  "cross_corr_sum": 10.1289157301783,
+  "source_rms_sorted": [
+    0.014848373818815859,
+    0.10612338923928627,
+    0.14812823880742937,
+    0.04051717058886394
+  ]
+}

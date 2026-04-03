@@ -9,8 +9,8 @@ Q2. Do room acoustics transfer between example_mixture.wav and mixture.wav?
 
 Immediate next
 
-- Commit + push this tuning batch
-- Then start probabilistic spatial EM / GMM on example_mixture.wav
+- Evaluate the first Spatial EM / GMM prototype on example_mixture.wav
+- If it is promising enough, turn its soft masks into MVDR next
 
 Completed today
 
@@ -25,6 +25,9 @@ Completed today
   Best trial #74: n_fft=2048, hop_size=512, n_iter=110, n_components=2, score=1.2559
 ✓ ILRMA default vs tuned variants added for example_mixture.wav and mixture.wav
   Default remains visible in demo; tuned ILRMA sits in its own hidden subsection
+✓ First Spatial EM / GMM prototype implemented on example_mixture.wav
+  Uses low-frequency TDoA bins for EM/GMM, then soft spatial masks for 4-channel reconstruction
+  Current note: learned GMM templates collapse front/back, so mask construction falls back to SRP-seeded angles
 ✓ DUET on mixture.wav — finds 90°, 119°, 184°, 270°; misses front speaker entirely
   (LF-RR pair has poor angular resolution near 0° — known DUET limitation)
 ✓ DL on mixture.wav — SepFormer-WHAMR: MOS 2.61, cross-corr 0.235 (vs 0.099 on example)
@@ -32,12 +35,10 @@ Completed today
 
 Next up — hackathon priority
 
-1. Implement probabilistic spatial EM / GMM on example_mixture.wav
-   - Build TF-bin spatial features (TDoA / IPD over mic pairs)
-   - Fit a small EM model with K components = candidate speakers
-   - Output soft assignments / masks per source
-   - Use this as a principled middle ground between SRP peaks and blind BSS
-   - First goal: produce listenable separated example streams and compare against DUET / AuxIVA / ILRMA
+1. Evaluate and tighten the Spatial EM / GMM prototype on example_mixture.wav
+   - Listen to the current outputs and compare against DUET / AuxIVA / ILRMA
+   - Improve the front/back split so the method does not need SRP-template fallback
+   - Decide whether it is demo-worthy as its own separator
 
 2. If the EM / GMM masks look promising: convert them into MVDR masks
    - EM-mask MVDR is probably the fastest high-upside hybrid method to demo

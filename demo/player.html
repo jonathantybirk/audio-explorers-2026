@@ -135,6 +135,7 @@
     .badge.mmvdr  { background: #ccfbf1; color: #0f766e; }
     .badge.auxiva { background: #fed7aa; color: #9a3412; }
     .badge.ilrma  { background: #fde68a; color: #78350f; }
+    .badge.em     { background: #dcfce7; color: #166534; }
     .badge.tdica  { background: #fecdd3; color: #9f1239; }
     .badge.duet   { background: #e0e7ff; color: #4338ca; }
     .badge.mic    { background: #fef3c7; color: #92400e; }
@@ -218,6 +219,7 @@
           <span><span class="dot" style="background:#0f766e"></span> Mask-MVDR</span>
           <span><span class="dot" style="background:#9a3412"></span> AuxIVA</span>
           <span><span class="dot" style="background:#78350f"></span> ILRMA</span>
+          <span><span class="dot" style="background:#166534"></span> Spatial EM</span>
           <span><span class="dot" style="background:#4338ca"></span> DUET</span>
           <span><span class="dot" style="background:#be123c"></span> TD-ICA</span>
           <span><span class="dot" style="background:#92400e"></span> Mic</span>
@@ -265,6 +267,7 @@
         { key: "auxiva_tuned", header: "AuxIVA Tuned", secDefault: false },
         { key: "ilrma",  header: "ILRMA",         secDefault: true },
         { key: "ilrma_tuned", header: "ILRMA Tuned", secDefault: false },
+        { key: "spatial_em", header: "Spatial EM", secDefault: false },
     ]},
     { id: "dl",       label: "Deep Learning",    colDefault: true, sections: [
         { key: "sfwhamr",  header: "SepFormer WHAMR ★",  secDefault: true },
@@ -330,6 +333,12 @@
     ["180deg_back","180° Back","180"],["270deg_right","270° Right","290"]
   ])
     allTracks.push(track(`ex_ilrma_tuned_${dirKey}`, EX, "ilrma_tuned", `${dirLabel} — ILRMA tuned`, `tuned hp · est. ${doa}° · hop=512 iter=110 · NMF_k=2`, "ilrma", `../analysis/ilrma/separated/ilrma_tuned_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","0"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","176"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_spatial_em_${dirKey}`, EX, "spatial_em", `${dirLabel} — Spatial EM`, `prototype · est. ${doa}° · probabilistic masks · SRP-seeded fallback`, "em", `../analysis/spatial_em/separated/spatial_em_example_${dirKey}.wav`));
 
   // ── EXAMPLE — Deep Learning ──────────────────────────────────────────────────
   const DL = "../analysis/dl_separation/separated";
@@ -427,6 +436,7 @@
     example: {
       sub: `<code>example_mixture.wav</code> — four talkers at known positions 0° / 90° / 180° / 270°.<br>
             Beamforming uses those angles. DoA methods estimate ~3° / 90° / ~178° / 270°.<br>
+            Spatial EM prototype currently recovers 0° / 90° / ~176° / 270°, but its mask templates still fall back to SRP-seeded angles.<br>
             When multiple versions exist, the default clip set stays visible and alternate/tuned variants are kept in hidden subsections.`,
       polarTitle: "SRP-PHAT — example_mixture",
       polarSrc:   "../analysis/srp_phat/spatial_spectrum/srp_phat_polar.png",
