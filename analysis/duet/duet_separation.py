@@ -31,7 +31,16 @@ from scipy.signal import istft, stft
 from sklearn.cluster import KMeans
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-WAV_PATH = os.path.join(REPO_ROOT, "DONT-TOUCH/Software Case/example_mixture.wav")
+
+# "example"  → example_mixture.wav  (known speaker positions)
+# "mixture"  → mixture.wav          (unknown positions, re-estimated from signal)
+WAV_KEY = "mixture"
+
+_WAV_PATHS = {
+    "example": os.path.join(REPO_ROOT, "DONT-TOUCH", "Software Case", "example_mixture.wav"),
+    "mixture": os.path.join(REPO_ROOT, "DONT-TOUCH", "Software Case", "mixture.wav"),
+}
+WAV_PATH = _WAV_PATHS[WAV_KEY]
 GEO_PATH = os.path.join(REPO_ROOT, "data", "mic_geometry.json")
 OUT_DIR = os.path.join(os.path.dirname(__file__), "separated")
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -272,21 +281,22 @@ power_grid = np.stack(power_grid, axis=0)
 order = list(np.argsort(doas))
 
 print("\nSaving separated audio ...")
-for stale_path in glob.glob(os.path.join(OUT_DIR, "duet_source_*deg.wav")):
+pfx = WAV_KEY  # "example" or "mixture" — keeps outputs from different files separate
+for stale_path in glob.glob(os.path.join(OUT_DIR, f"duet_{pfx}_source_*deg.wav")):
     os.remove(stale_path)
-for stale_path in glob.glob(os.path.join(OUT_DIR, "duet_*deg*.wav")):
+for stale_path in glob.glob(os.path.join(OUT_DIR, f"duet_{pfx}_*deg*.wav")):
     os.remove(stale_path)
 
 cardinal_counts = {}
 for rank, k in enumerate(order):
     az = doas[k]
-    exact_path = os.path.join(OUT_DIR, f"duet_source_{rank + 1}_{az:.0f}deg.wav")
+    exact_path = os.path.join(OUT_DIR, f"duet_{pfx}_source_{rank + 1}_{az:.0f}deg.wav")
     save_wav(exact_path, mono_sources[k], sr)
 
     cardinal = cardinals[k]
     cardinal_counts[cardinal] = cardinal_counts.get(cardinal, 0) + 1
     suffix = "" if cardinal_counts[cardinal] == 1 else f"_{cardinal_counts[cardinal]}"
-    stable_path = os.path.join(OUT_DIR, f"duet_{cardinal_key(cardinal)}{suffix}.wav")
+    stable_path = os.path.join(OUT_DIR, f"duet_{pfx}_{cardinal_key(cardinal)}{suffix}.wav")
     save_wav(stable_path, mono_sources[k], sr)
 
 print("\nPlotting spectrograms ...")
@@ -303,11 +313,11 @@ for rank, k in enumerate(order):
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Frequency (Hz)")
 plt.suptitle(
-    f"DUET separated sources — pair {CHANNEL_LABELS[PAIR[0]]}-{CHANNEL_LABELS[PAIR[1]]}",
+    f"DUET separated sources — {WAV_KEY} — pair {CHANNEL_LABELS[PAIR[0]]}-{CHANNEL_LABELS[PAIR[1]]}",
     fontsize=13,
 )
 plt.tight_layout()
-spec_path = os.path.join(OUT_DIR, "duet_spectrograms.png")
+spec_path = os.path.join(OUT_DIR, f"duet_{pfx}_spectrograms.png")
 plt.savefig(spec_path, dpi=150)
 plt.close()
 print(f"  saved  {os.path.relpath(spec_path)}")
@@ -345,11 +355,11 @@ for idx, center in enumerate(centers):
 ax.set_xlabel("Log attenuation")
 ax.set_ylabel("Relative delay (ms)")
 ax.set_title(
-    f"DUET attenuation-delay clusters — pair {CHANNEL_LABELS[PAIR[0]]}-{CHANNEL_LABELS[PAIR[1]]}"
+    f"DUET attenuation-delay clusters — {WAV_KEY} — pair {CHANNEL_LABELS[PAIR[0]]}-{CHANNEL_LABELS[PAIR[1]]}"
 )
 fig.colorbar(scatter, ax=ax, label="DUET bin weight")
 plt.tight_layout()
-cluster_path = os.path.join(OUT_DIR, "duet_clusters.png")
+cluster_path = os.path.join(OUT_DIR, f"duet_{pfx}_clusters.png")
 plt.savefig(cluster_path, dpi=150)
 plt.close()
 print(f"  saved  {os.path.relpath(cluster_path)}")
@@ -370,15 +380,15 @@ for rank, k in enumerate(order):
     ax.set_thetagrids([0, 90, 180, 270], labels=["0°", "90°", "180°", "270°"])
     ax.set_rticks([])
     ax.set_title(f"Source {rank + 1}\n{doas[k]:.1f}°", va="bottom")
-plt.suptitle("DUET per-source DoA via SRP-PHAT", y=1.02, fontsize=13)
+plt.suptitle(f"DUET per-source DoA via SRP-PHAT — {WAV_KEY}", y=1.02, fontsize=13)
 plt.tight_layout()
-polar_path = os.path.join(OUT_DIR, "duet_polar.png")
+polar_path = os.path.join(OUT_DIR, f"duet_{pfx}_polar.png")
 plt.savefig(polar_path, dpi=150, bbox_inches="tight")
 plt.close()
 print(f"  saved  {os.path.relpath(polar_path)}")
 
 print("\n════════════════════════════════════════════════════════════════════════")
-print("  DUET source separation — example_mixture.wav")
+print(f"  DUET source separation — {os.path.basename(WAV_PATH)}")
 print(f"  Pair: {CHANNEL_LABELS[PAIR[0]]}-{CHANNEL_LABELS[PAIR[1]]}")
 print(f"  STFT: nfft={NFFT}, hop={HOP}")
 print(f"  Frequency range: {FREQ_RANGE_HZ[0]:.0f}–{FREQ_RANGE_HZ[1]:.0f} Hz")

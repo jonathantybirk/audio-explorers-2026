@@ -21,6 +21,10 @@ Pipeline:
 
 Outputs saved to analysis/ilrma/separated/
 
+For example_mixture.wav this script emits two ILRMA variants:
+  - default: original demo hyperparameters
+  - tuned: hyperparameters selected by the finished Optuna study
+
 ── Hyperparameters ──────────────────────────────────────────────────────────
 All hyperparameters are at the top of this file.  Change and rerun to tune.
 """
@@ -41,12 +45,28 @@ from scipy.io import wavfile
 WAV_KEY = "example"
 
 # ── ILRMA hyperparameters ─────────────────────────────────────────────────────
-STFT_SIZE    = 2048   # FFT size — longer captures more pitch periodicity
-HOP_SIZE     = 1024   # hop between frames (50% overlap)
-ILRMA_ITERS  = 100    # more iterations than AuxIVA default (was 30); diminishing
-                      # returns beyond ~100 for 4 sources at 44.1 kHz
-NMF_COMPONENTS = 4    # NMF rank per source — controls spectrogram model richness
-                      # 2-4 is typical; more = richer model but slower
+ILRMA_VARIANTS = [
+    {
+        "key": "default",
+        "title": "ILRMA default",
+        "prefix": "ilrma",
+        "stft": 2048,
+        "hop": 1024,
+        "iters": 100,
+        "n_components": 4,
+        "note": "default demo hp",
+    },
+    {
+        "key": "tuned",
+        "title": "ILRMA tuned",
+        "prefix": "ilrma_tuned",
+        "stft": 2048,
+        "hop": 512,
+        "iters": 110,
+        "n_components": 2,
+        "note": "tuned on example_mixture.wav",
+    },
+]
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _WAV_PATHS = {
@@ -94,6 +114,12 @@ def save_wav(path, signal, sr):
     out = np.clip(signal / peak * 0.9, -1.0, 1.0)
     wavfile.write(path, sr, (out * 32767).astype(np.int16))
     print(f"  saved  {os.path.relpath(path)}")
+
+
+def remove_stale_outputs(pattern):
+    for path in glob.glob(os.path.join(OUT_DIR, pattern)):
+        os.remove(path)
+        print(f"  removed stale  {os.path.relpath(path)}")
 
 
 # ── Spatial helpers ───────────────────────────────────────────────────────────
@@ -197,107 +223,137 @@ sr, data = load_wav(WAV_PATH)
 print(f"  {data.shape[0]} samples  |  {data.shape[1]} channels  "
       f"|  {sr} Hz  |  {data.shape[0]/sr:.1f} s\n")
 
-print(f"Running ILRMA "
-      f"(4 sources, STFT={STFT_SIZE}, hop={HOP_SIZE}, "
-      f"iter={ILRMA_ITERS}, NMF_k={NMF_COMPONENTS}) ...")
-X, Y, A, mono_sources, synthesis_win = ilrma_separate(
-    data, STFT_SIZE, HOP_SIZE, ILRMA_ITERS, NMF_COMPONENTS
-)
-mono_sources = mono_sources[: data.shape[0], :].real.astype(np.float64)
-print(f"  STFT shape: {X.shape[0]} frames × {X.shape[1]} bins × {X.shape[2]} channels")
+azimuths = np.linspace(0, 360, 720, endpoint=False)
 
-print("\nSeparation diagnostics:")
-print("  Source RMS amplitudes:")
-for k in range(mono_sources.shape[1]):
-    print(f"    Component {k}: RMS = {np.sqrt(np.mean(mono_sources[:, k]**2)):.4f}")
-
-print("  Pairwise cross-correlation (off-diagonal near 0 is good):")
-corr = np.corrcoef(mono_sources.T)
-for i in range(corr.shape[0]):
-    print("    " + "  ".join(f"{corr[i, j]:+.3f}" for j in range(corr.shape[1])))
-
-print("\nEstimating DoA from ILRMA source images via SRP-PHAT ...")
-azimuths  = np.linspace(0, 360, 720, endpoint=False)
-doas      = []
-power_grid = []
-cardinals = []
-
-for k in range(mono_sources.shape[1]):
-    image_channels = reconstruct_source_image_channels(
-        Y, A, source_idx=k,
-        stft_size=STFT_SIZE, hop_size=HOP_SIZE,
-        synthesis_win=synthesis_win, n_samples=data.shape[0],
+for variant in ILRMA_VARIANTS:
+    print(
+        f"Running {variant['title']} "
+        f"(4 sources, STFT={variant['stft']}, hop={variant['hop']}, "
+        f"iter={variant['iters']}, NMF_k={variant['n_components']}; "
+        f"{variant['note']}) ..."
     )
-    power   = srp_phat_spectrum(image_channels, sr, azimuths)
-    best_az = float(azimuths[np.argmax(power)])
-    doas.append(best_az)
-    power_grid.append(power)
-    card = nearest_cardinal(best_az)
-    cardinals.append(card)
-    print(f"  Component {k}: DoA = {best_az:.1f}°  →  nearest cardinal {card}°")
+    X, Y, A, mono_sources, synthesis_win = ilrma_separate(
+        data,
+        variant["stft"],
+        variant["hop"],
+        variant["iters"],
+        variant["n_components"],
+    )
+    mono_sources = mono_sources[: data.shape[0], :].real.astype(np.float64)
+    print(f"  STFT shape: {X.shape[0]} frames × {X.shape[1]} bins × {X.shape[2]} channels")
 
-power_grid = np.stack(power_grid, axis=0)
-order = list(np.argsort(doas))
+    print("\nSeparation diagnostics:")
+    print("  Source RMS amplitudes:")
+    for k in range(mono_sources.shape[1]):
+        print(f"    Component {k}: RMS = {np.sqrt(np.mean(mono_sources[:, k]**2)):.4f}")
 
-print("\nSaving separated audio ...")
-for stale in glob.glob(os.path.join(OUT_DIR, "ilrma_source_*deg.wav")):
-    os.remove(stale)
-for stale in glob.glob(os.path.join(OUT_DIR, "ilrma_*deg_*.wav")):
-    os.remove(stale)
+    print("  Pairwise cross-correlation (off-diagonal near 0 is good):")
+    corr = np.corrcoef(mono_sources.T)
+    for i in range(corr.shape[0]):
+        print("    " + "  ".join(f"{corr[i, j]:+.3f}" for j in range(corr.shape[1])))
 
-for rank, k in enumerate(order):
-    az = doas[k]
-    save_wav(os.path.join(OUT_DIR, f"ilrma_source_{rank+1}_{az:.0f}deg.wav"),
-             mono_sources[:, k], sr)
-    save_wav(os.path.join(OUT_DIR, f"ilrma_{cardinal_key(cardinals[k])}.wav"),
-             mono_sources[:, k], sr)
+    print("\nEstimating DoA from ILRMA source images via SRP-PHAT ...")
+    doas = []
+    power_grid = []
+    cardinals = []
 
-print("\nPlotting spectrograms ...")
-fig, axes = plt.subplots(2, 2, figsize=(14, 8))
-for rank, k in enumerate(order):
-    ax = axes[rank // 2][rank % 2]
-    ax.specgram(mono_sources[:, k], Fs=sr, NFFT=512, noverlap=256, cmap="magma")
-    ax.set_title(f"ILRMA source {rank+1}  —  est. DoA {doas[k]:.1f}°  "
-                 f"(nearest {cardinals[k]}°)")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Frequency (Hz)")
-plt.suptitle("ILRMA-separated sources — " + os.path.basename(WAV_PATH), fontsize=13)
-plt.tight_layout()
-spec_path = os.path.join(OUT_DIR, "ilrma_spectrograms.png")
-plt.savefig(spec_path, dpi=150)
-plt.close()
-print(f"  saved  {os.path.relpath(spec_path)}")
+    for k in range(mono_sources.shape[1]):
+        image_channels = reconstruct_source_image_channels(
+            Y,
+            A,
+            source_idx=k,
+            stft_size=variant["stft"],
+            hop_size=variant["hop"],
+            synthesis_win=synthesis_win,
+            n_samples=data.shape[0],
+        )
+        power = srp_phat_spectrum(image_channels, sr, azimuths)
+        best_az = float(azimuths[np.argmax(power)])
+        doas.append(best_az)
+        power_grid.append(power)
+        card = nearest_cardinal(best_az)
+        cardinals.append(card)
+        print(f"  Component {k}: DoA = {best_az:.1f}°  →  nearest cardinal {card}°")
 
-print("Plotting per-source SRP-PHAT polars ...")
-fig, axes = plt.subplots(2, 2, figsize=(12, 12), subplot_kw={"projection": "polar"})
-for rank, k in enumerate(order):
-    ax     = axes[rank // 2][rank % 2]
-    pw     = power_grid[k]
-    pw_n   = (pw - pw.min()) / (pw.max() - pw.min() + 1e-12)
-    az_rad = np.deg2rad(azimuths)
-    ax.set_theta_zero_location("N")
-    ax.set_theta_direction(1)
-    ax.plot(az_rad, pw_n, linewidth=1.2, color="#d97706")
-    ax.fill(az_rad, pw_n, alpha=0.22, color="#d97706")
-    ax.axvline(np.deg2rad(doas[k]), color="crimson", linewidth=1.5, linestyle="--")
-    ax.set_thetagrids([0, 90, 180, 270],
-                      labels=["0°\nFront", "90°\nLeft", "180°\nBack", "270°\nRight"],
-                      fontsize=8)
-    ax.set_rticks([])
-    ax.set_title(f"ILRMA source {rank+1}  —  {doas[k]:.1f}°  "
-                 f"(nearest {cardinals[k]}°)", pad=14)
-plt.suptitle("Per-source SRP-PHAT from ILRMA source images — " + os.path.basename(WAV_PATH),
-             fontsize=12)
-plt.tight_layout()
-polar_path = os.path.join(OUT_DIR, "ilrma_polar.png")
-plt.savefig(polar_path, dpi=150)
-plt.close()
-print(f"  saved  {os.path.relpath(polar_path)}")
+    power_grid = np.stack(power_grid, axis=0)
+    order = list(np.argsort(doas))
 
-print("\n════════════════════════════════════════════════════════════════════════")
-print("  ILRMA source separation — " + os.path.basename(WAV_PATH))
-print(f"  STFT={STFT_SIZE}, hop={HOP_SIZE}, iter={ILRMA_ITERS}, NMF_k={NMF_COMPONENTS}")
-print("  Estimated source directions (sorted):")
-for rank, k in enumerate(order):
-    print(f"    Source {rank+1}: {doas[k]:.1f}°  (nearest {cardinals[k]}°)")
-print("════════════════════════════════════════════════════════════════════════")
+    print("\nSaving separated audio ...")
+    remove_stale_outputs(f"{variant['prefix']}_source_*deg.wav")
+    remove_stale_outputs(f"{variant['prefix']}_*deg_*.wav")
+
+    for rank, k in enumerate(order):
+        az = doas[k]
+        save_wav(
+            os.path.join(OUT_DIR, f"{variant['prefix']}_source_{rank+1}_{az:.0f}deg.wav"),
+            mono_sources[:, k],
+            sr,
+        )
+        save_wav(
+            os.path.join(OUT_DIR, f"{variant['prefix']}_{cardinal_key(cardinals[k])}.wav"),
+            mono_sources[:, k],
+            sr,
+        )
+
+    print("\nPlotting spectrograms ...")
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+    for rank, k in enumerate(order):
+        ax = axes[rank // 2][rank % 2]
+        ax.specgram(mono_sources[:, k], Fs=sr, NFFT=512, noverlap=256, cmap="magma")
+        ax.set_title(
+            f"{variant['title']} source {rank+1}  —  est. DoA {doas[k]:.1f}°  "
+            f"(nearest {cardinals[k]}°)"
+        )
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Frequency (Hz)")
+    plt.suptitle(f"{variant['title']} sources — " + os.path.basename(WAV_PATH), fontsize=13)
+    plt.tight_layout()
+    spec_path = os.path.join(OUT_DIR, f"{variant['prefix']}_spectrograms.png")
+    plt.savefig(spec_path, dpi=150)
+    plt.close()
+    print(f"  saved  {os.path.relpath(spec_path)}")
+
+    print("Plotting per-source SRP-PHAT polars ...")
+    fig, axes = plt.subplots(2, 2, figsize=(12, 12), subplot_kw={"projection": "polar"})
+    for rank, k in enumerate(order):
+        ax = axes[rank // 2][rank % 2]
+        pw = power_grid[k]
+        pw_n = (pw - pw.min()) / (pw.max() - pw.min() + 1e-12)
+        az_rad = np.deg2rad(azimuths)
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(1)
+        ax.plot(az_rad, pw_n, linewidth=1.2, color="#d97706")
+        ax.fill(az_rad, pw_n, alpha=0.22, color="#d97706")
+        ax.axvline(np.deg2rad(doas[k]), color="crimson", linewidth=1.5, linestyle="--")
+        ax.set_thetagrids(
+            [0, 90, 180, 270],
+            labels=["0°\nFront", "90°\nLeft", "180°\nBack", "270°\nRight"],
+            fontsize=8,
+        )
+        ax.set_rticks([])
+        ax.set_title(
+            f"{variant['title']} source {rank+1}  —  {doas[k]:.1f}°  "
+            f"(nearest {cardinals[k]}°)",
+            pad=14,
+        )
+    plt.suptitle(
+        f"Per-source SRP-PHAT from {variant['title']} source images — "
+        + os.path.basename(WAV_PATH),
+        fontsize=12,
+    )
+    plt.tight_layout()
+    polar_path = os.path.join(OUT_DIR, f"{variant['prefix']}_polar.png")
+    plt.savefig(polar_path, dpi=150)
+    plt.close()
+    print(f"  saved  {os.path.relpath(polar_path)}")
+
+    print("\n════════════════════════════════════════════════════════════════════════")
+    print(f"  {variant['title']} — " + os.path.basename(WAV_PATH))
+    print(
+        f"  STFT={variant['stft']}, hop={variant['hop']}, "
+        f"iter={variant['iters']}, NMF_k={variant['n_components']}"
+    )
+    print("  Estimated source directions (sorted):")
+    for rank, k in enumerate(order):
+        print(f"    Source {rank+1}: {doas[k]:.1f}°  (nearest {cardinals[k]}°)")
+    print("════════════════════════════════════════════════════════════════════════\n")

@@ -35,9 +35,35 @@ GEO_PATH = os.path.join(REPO_ROOT, "data", "mic_geometry.json")
 OUT_DIR = os.path.join(os.path.dirname(__file__), "separated")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-STFT_SIZE = 2048
-HOP_SIZE = 1024
-AUXIVA_ITERS = 30
+CARDINAL_KEYS = {
+    0: "0deg_front",
+    90: "90deg_left",
+    180: "180deg_back",
+    270: "270deg_right",
+}
+
+AUXIVA_VARIANTS = [
+    {
+        "key": "default",
+        "label": "default",
+        "title": "AuxIVA default",
+        "stft_size": 2048,
+        "hop_size": 1024,
+        "n_iter": 30,
+        "stable_prefix": "ica",
+        "section_note": "default hp",
+    },
+    {
+        "key": "tuned",
+        "label": "tuned",
+        "title": "AuxIVA tuned",
+        "stft_size": 2048,
+        "hop_size": 512,
+        "n_iter": 90,
+        "stable_prefix": "ica_tuned",
+        "section_note": "tuned hp",
+    },
+]
 
 
 # ── Geometry ──────────────────────────────────────────────────────────────────
@@ -169,12 +195,163 @@ def nearest_cardinal_label(angle_deg):
 
 
 def cardinal_key(angle_deg):
+    return CARDINAL_KEYS[angle_deg]
+
+
+def variant_exact_prefix(variant):
+    return "ica_source" if variant["stable_prefix"] == "ica" else f'{variant["stable_prefix"]}_source'
+
+
+def remove_stale_variant_outputs(variant):
+    stable_prefix = variant["stable_prefix"]
+    exact_prefix = variant_exact_prefix(variant)
+
+    patterns = [
+        f"{exact_prefix}_*deg.wav",
+        f"{stable_prefix}_spectrograms.png",
+        f"{stable_prefix}_polar.png",
+    ]
+    patterns.extend(f"{stable_prefix}_{cardinal_name}.wav" for cardinal_name in CARDINAL_KEYS.values())
+
+    for pattern in patterns:
+        for stale_path in glob.glob(os.path.join(OUT_DIR, pattern)):
+            os.remove(stale_path)
+
+
+def run_variant(variant, data, sr, azimuths):
+    print(
+        "Running "
+        f'{variant["title"]} '
+        f'(4 sources, STFT={variant["stft_size"]}, '
+        f'hop={variant["hop_size"]}, iterations={variant["n_iter"]}) ...'
+    )
+    X, Y, A, mono_sources, synthesis_win = auxiva_separate(
+        data,
+        stft_size=variant["stft_size"],
+        hop_size=variant["hop_size"],
+        n_iter=variant["n_iter"],
+    )
+    mono_sources = mono_sources[: data.shape[0], :].real.astype(np.float64)
+    print(f"  STFT shape: {X.shape[0]} frames × {X.shape[1]} bins × {X.shape[2]} channels")
+
+    print("\nSeparation diagnostics:")
+    print("  Source RMS amplitudes:")
+    for k in range(mono_sources.shape[1]):
+        rms = np.sqrt(np.mean(mono_sources[:, k] ** 2))
+        print(f"    Component {k}: RMS = {rms:.4f}")
+
+    print("  Pairwise cross-correlation (off-diagonal near 0 is good):")
+    corr = np.corrcoef(mono_sources.T)
+    for i in range(corr.shape[0]):
+        row = "    " + "  ".join(f"{corr[i, j]:+.3f}" for j in range(corr.shape[1]))
+        print(row)
+
+    print("\nEstimating DoA from AuxIVA source images via SRP-PHAT ...")
+    doas = []
+    power_grid = []
+    cardinal_labels = []
+
+    for k in range(mono_sources.shape[1]):
+        image_channels = reconstruct_source_image_channels(
+            Y,
+            A,
+            source_idx=k,
+            stft_size=variant["stft_size"],
+            hop_size=variant["hop_size"],
+            synthesis_win=synthesis_win,
+            n_samples=data.shape[0],
+        )
+        power = srp_phat_spectrum(image_channels, sr, azimuths)
+        best_az = float(azimuths[np.argmax(power)])
+        doas.append(best_az)
+        power_grid.append(power)
+        cardinal = nearest_cardinal_label(best_az)
+        cardinal_labels.append(cardinal)
+        print(f"  Component {k}: estimated DoA = {best_az:.1f}°  →  nearest cardinal {cardinal}°")
+
+    power_grid = np.stack(power_grid, axis=0)
+    order = list(np.argsort(doas))
+
+    print("\nSaving separated audio ...")
+    remove_stale_variant_outputs(variant)
+    stable_prefix = variant["stable_prefix"]
+    exact_prefix = variant_exact_prefix(variant)
+    for rank, k in enumerate(order):
+        az = doas[k]
+        exact_path = os.path.join(OUT_DIR, f"{exact_prefix}_{rank + 1}_{az:.0f}deg.wav")
+        stable_path = os.path.join(OUT_DIR, f"{stable_prefix}_{cardinal_key(cardinal_labels[k])}.wav")
+        save_wav(exact_path, mono_sources[:, k], sr)
+        save_wav(stable_path, mono_sources[:, k], sr)
+
+    print("\nPlotting spectrograms ...")
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+    for rank, k in enumerate(order):
+        ax = axes[rank // 2][rank % 2]
+        ax.specgram(mono_sources[:, k], Fs=sr, NFFT=512, noverlap=256, cmap="inferno")
+        ax.set_title(
+            f"{variant['title']} source {rank + 1}  —  est. DoA {doas[k]:.1f}°  "
+            f"(nearest {cardinal_labels[k]}°)"
+        )
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Frequency (Hz)")
+    plt.suptitle(f"{variant['title']} sources — example_mixture.wav", fontsize=13)
+    plt.tight_layout()
+    spec_path = os.path.join(OUT_DIR, f"{stable_prefix}_spectrograms.png")
+    plt.savefig(spec_path, dpi=150)
+    plt.close()
+    print(f"  saved  {os.path.relpath(spec_path)}")
+
+    print("Plotting per-source SRP-PHAT polars ...")
+    fig, axes = plt.subplots(2, 2, figsize=(12, 12), subplot_kw={"projection": "polar"})
+    for rank, k in enumerate(order):
+        ax = axes[rank // 2][rank % 2]
+        pw = power_grid[k]
+        pw_norm = (pw - pw.min()) / (pw.max() - pw.min() + 1e-12)
+        az_rad = np.deg2rad(azimuths)
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(1)
+        ax.plot(az_rad, pw_norm, linewidth=1.2, color="steelblue")
+        ax.fill(az_rad, pw_norm, alpha=0.25, color="steelblue")
+        ax.axvline(np.deg2rad(doas[k]), color="crimson", linewidth=1.5, linestyle="--")
+        ax.set_thetagrids(
+            [0, 90, 180, 270],
+            labels=["0°\nFront", "90°\nLeft", "180°\nBack", "270°\nRight"],
+            fontsize=8,
+        )
+        ax.set_rticks([])
+        ax.set_title(
+            f"{variant['title']} source {rank + 1}  —  {doas[k]:.1f}°  "
+            f"(nearest {cardinal_labels[k]}°)",
+            pad=14,
+        )
+    plt.suptitle(f"Per-source SRP-PHAT from {variant['title']} source images", fontsize=12)
+    plt.tight_layout()
+    polar_path = os.path.join(OUT_DIR, f"{stable_prefix}_polar.png")
+    plt.savefig(polar_path, dpi=150)
+    plt.close()
+    print(f"  saved  {os.path.relpath(polar_path)}")
+
+    print("\n════════════════════════════════════════════════════════════════════════")
+    print(f"  ICA source separation — example_mixture.wav — {variant['title']}")
+    print(
+        f"  Method: AuxIVA ({variant['n_iter']} iterations, "
+        f"STFT {variant['stft_size']}, hop {variant['hop_size']})"
+    )
+    print("  Estimated source directions (sorted):")
+    for rank, k in enumerate(order):
+        print(
+            f"    Source {rank + 1}: {doas[k]:.1f}°  "
+            f"(nearest cardinal {cardinal_labels[k]}°)"
+        )
+    print("  Expected: 0°, 90°, 180°, 270°")
+    print("════════════════════════════════════════════════════════════════════════")
+
     return {
-        0: "0deg_front",
-        90: "90deg_left",
-        180: "180deg_back",
-        270: "270deg_right",
-    }[angle_deg]
+        "variant": variant,
+        "doas": doas,
+        "order": order,
+        "cardinal_labels": cardinal_labels,
+    }
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -185,128 +362,8 @@ print(
     f"|  {sr} Hz  |  {data.shape[0] / sr:.1f} s\n"
 )
 
-print(
-    "Running AuxIVA "
-    f"(4 sources, STFT={STFT_SIZE}, hop={HOP_SIZE}, iterations={AUXIVA_ITERS}) ..."
-)
-X, Y, A, mono_sources, synthesis_win = auxiva_separate(
-    data,
-    stft_size=STFT_SIZE,
-    hop_size=HOP_SIZE,
-    n_iter=AUXIVA_ITERS,
-)
-mono_sources = mono_sources[: data.shape[0], :].real.astype(np.float64)
-print(f"  STFT shape: {X.shape[0]} frames × {X.shape[1]} bins × {X.shape[2]} channels")
-
-print("\nSeparation diagnostics:")
-print("  Source RMS amplitudes:")
-for k in range(mono_sources.shape[1]):
-    rms = np.sqrt(np.mean(mono_sources[:, k] ** 2))
-    print(f"    Component {k}: RMS = {rms:.4f}")
-
-print("  Pairwise cross-correlation (off-diagonal near 0 is good):")
-corr = np.corrcoef(mono_sources.T)
-for i in range(corr.shape[0]):
-    row = "    " + "  ".join(f"{corr[i, j]:+.3f}" for j in range(corr.shape[1]))
-    print(row)
-
-print("\nEstimating DoA from AuxIVA source images via SRP-PHAT ...")
 azimuths = np.linspace(0, 360, 720, endpoint=False)
-doas = []
-power_grid = []
-cardinal_labels = []
-
-for k in range(mono_sources.shape[1]):
-    image_channels = reconstruct_source_image_channels(
-        Y,
-        A,
-        source_idx=k,
-        stft_size=STFT_SIZE,
-        hop_size=HOP_SIZE,
-        synthesis_win=synthesis_win,
-        n_samples=data.shape[0],
-    )
-    power = srp_phat_spectrum(image_channels, sr, azimuths)
-    best_az = float(azimuths[np.argmax(power)])
-    doas.append(best_az)
-    power_grid.append(power)
-    cardinal = nearest_cardinal_label(best_az)
-    cardinal_labels.append(cardinal)
-    print(f"  Component {k}: estimated DoA = {best_az:.1f}°  →  nearest cardinal {cardinal}°")
-
-power_grid = np.stack(power_grid, axis=0)
-
-order = list(np.argsort(doas))
-
-print("\nSaving separated audio ...")
-for stale_path in glob.glob(os.path.join(OUT_DIR, "ica_source_*deg.wav")):
-    os.remove(stale_path)
-for stale_path in glob.glob(os.path.join(OUT_DIR, "ica_*deg_*.wav")):
-    os.remove(stale_path)
-
-for rank, k in enumerate(order):
-    az = doas[k]
-    exact_path = os.path.join(OUT_DIR, f"ica_source_{rank + 1}_{az:.0f}deg.wav")
-    stable_path = os.path.join(OUT_DIR, f"ica_{cardinal_key(cardinal_labels[k])}.wav")
-    save_wav(exact_path, mono_sources[:, k], sr)
-    save_wav(stable_path, mono_sources[:, k], sr)
-
-print("\nPlotting spectrograms ...")
-fig, axes = plt.subplots(2, 2, figsize=(14, 8))
-for rank, k in enumerate(order):
-    ax = axes[rank // 2][rank % 2]
-    ax.specgram(mono_sources[:, k], Fs=sr, NFFT=512, noverlap=256, cmap="inferno")
-    ax.set_title(
-        f"ICA source {rank + 1}  —  est. DoA {doas[k]:.1f}°  "
-        f"(nearest {cardinal_labels[k]}°)"
-    )
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Frequency (Hz)")
-plt.suptitle("AuxIVA-separated sources — example_mixture.wav", fontsize=13)
-plt.tight_layout()
-spec_path = os.path.join(OUT_DIR, "ica_spectrograms.png")
-plt.savefig(spec_path, dpi=150)
-plt.close()
-print(f"  saved  {os.path.relpath(spec_path)}")
-
-print("Plotting per-source SRP-PHAT polars ...")
-fig, axes = plt.subplots(2, 2, figsize=(12, 12), subplot_kw={"projection": "polar"})
-for rank, k in enumerate(order):
-    ax = axes[rank // 2][rank % 2]
-    pw = power_grid[k]
-    pw_norm = (pw - pw.min()) / (pw.max() - pw.min() + 1e-12)
-    az_rad = np.deg2rad(azimuths)
-    ax.set_theta_zero_location("N")
-    ax.set_theta_direction(1)
-    ax.plot(az_rad, pw_norm, linewidth=1.2, color="steelblue")
-    ax.fill(az_rad, pw_norm, alpha=0.25, color="steelblue")
-    ax.axvline(np.deg2rad(doas[k]), color="crimson", linewidth=1.5, linestyle="--")
-    ax.set_thetagrids(
-        [0, 90, 180, 270],
-        labels=["0°\nFront", "90°\nLeft", "180°\nBack", "270°\nRight"],
-        fontsize=8,
-    )
-    ax.set_rticks([])
-    ax.set_title(
-        f"ICA source {rank + 1}  —  {doas[k]:.1f}°  "
-        f"(nearest {cardinal_labels[k]}°)",
-        pad=14,
-    )
-plt.suptitle("Per-source SRP-PHAT from AuxIVA source images", fontsize=12)
-plt.tight_layout()
-polar_path = os.path.join(OUT_DIR, "ica_polar.png")
-plt.savefig(polar_path, dpi=150)
-plt.close()
-print(f"  saved  {os.path.relpath(polar_path)}")
-
-print("\n════════════════════════════════════════════════════════════════════════")
-print("  ICA source separation — example_mixture.wav")
-print(f"  Method: AuxIVA ({AUXIVA_ITERS} iterations, STFT {STFT_SIZE}, hop {HOP_SIZE})")
-print("  Estimated source directions (sorted):")
-for rank, k in enumerate(order):
-    print(
-        f"    Source {rank + 1}: {doas[k]:.1f}°  "
-        f"(nearest cardinal {cardinal_labels[k]}°)"
-    )
-print("  Expected: 0°, 90°, 180°, 270°")
-print("════════════════════════════════════════════════════════════════════════")
+variant_results = []
+for variant in AUXIVA_VARIANTS:
+    print("\n" + "=" * 72)
+    variant_results.append(run_variant(variant, data, sr, azimuths))

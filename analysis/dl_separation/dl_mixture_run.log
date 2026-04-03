@@ -1,0 +1,53 @@
+Failed to detect torchaudio major version; unsure how to check your setup. We recommend that you keep torchaudio up-to-date.
+Failed to detect torchaudio major version; unsure how to check your setup. We recommend that you keep torchaudio up-to-date.
+
+Loading DONT-TOUCH/Software Case/mixture.wav ...
+  926100 samples | 4 ch | 44100 Hz | 21.0s
+
+========================================================================
+  NOTE: all models below are out-of-distribution for our 4-speaker task.
+  Trained on 2–3 speakers; we have 4. Results show DL baseline capability.
+========================================================================
+
+  [convtasnet_libri2mix_clean]  ConvTasNet · 2 src · 8 kHz · anechoic LibriMix
+Using cached model `Cosentino/ConvTasNet_LibriMix_sep_clean`
+    saved  analysis/dl_separation/separated/mixture_convtasnet_libri2mix_clean_src1.wav
+    saved  analysis/dl_separation/separated/mixture_convtasnet_libri2mix_clean_src2.wav
+    DNSMOS ovrl_mos: ['1.815', '1.806']  mean=1.810  cross-corr=0.842
+
+  [convtasnet_libri3mix_noisy]  ConvTasNet · 3 src · 8 kHz · noisy LibriMix
+Using cached model `tmirzaev-dotcom/ConvTasNet_Libri3Mix_sepnoisy`
+    saved  analysis/dl_separation/separated/mixture_convtasnet_libri3mix_noisy_src1.wav
+    saved  analysis/dl_separation/separated/mixture_convtasnet_libri3mix_noisy_src2.wav
+    saved  analysis/dl_separation/separated/mixture_convtasnet_libri3mix_noisy_src3.wav
+    DNSMOS ovrl_mos: ['1.895', '1.484', '2.138']  mean=1.839  cross-corr=1.625
+
+  [dprnn_wham_clean]  DPRNN · 2 src · 8 kHz · WHAM! (some reverb)
+Using cached model `mpariente/DPRNNTasNet_WHAM!_sepclean`
+    saved  analysis/dl_separation/separated/mixture_dprnn_wham_clean_src1.wav
+    saved  analysis/dl_separation/separated/mixture_dprnn_wham_clean_src2.wav
+    DNSMOS ovrl_mos: ['1.287', '1.764']  mean=1.526  cross-corr=0.848
+
+  [sepformer_whamr]  SepFormer · 2 src · 8 kHz · WHAM!+reverb  ← best domain match
+    saved  analysis/dl_separation/separated/mixture_sepformer_whamr_src1.wav
+    saved  analysis/dl_separation/separated/mixture_sepformer_whamr_src2.wav
+    DNSMOS ovrl_mos: ['2.682', '2.541']  mean=2.611  cross-corr=0.235
+
+  [sepformer_libri3mix]  SepFormer · 3 src · 8 kHz · noisy LibriMix
+    saved  analysis/dl_separation/separated/mixture_sepformer_libri3mix_src1.wav
+    saved  analysis/dl_separation/separated/mixture_sepformer_libri3mix_src2.wav
+    saved  analysis/dl_separation/separated/mixture_sepformer_libri3mix_src3.wav
+    DNSMOS ovrl_mos: ['1.580', '2.157', '2.063']  mean=1.934  cross-corr=1.773
+
+========================================================================
+  FULL COMPARISON — mixture  |  DNSMOS ovrl_mos (↑) · cross-corr (↓)
+========================================================================
+  Method                            Srcs   Mean MOS     Corr  Note
+  --------------------------------  ----  ---------  -------  ------------------------------
+  convtasnet_libri2mix_clean           2      1.810    0.842  ConvTasNet · 2 src · 8 kHz · anechoic LibriMix
+  convtasnet_libri3mix_noisy           3      1.839    1.625  ConvTasNet · 3 src · 8 kHz · noisy LibriMix
+  dprnn_wham_clean                     2      1.526    0.848  DPRNN · 2 src · 8 kHz · WHAM! (some reverb)
+  sepformer_whamr                      2      2.611    0.235  SepFormer · 2 src · 8 kHz · WHAM!+reverb  ← best domain match
+  sepformer_libri3mix                  3      1.934    1.773  SepFormer · 3 src · 8 kHz · noisy LibriMix
+  ILRMA  (classical BSS)               4      1.565    0.132  4 src · 44.1 kHz · uses all 4 channels
+

@@ -1,77 +1,80 @@
-Current status
+Open questions
 
-Completed
-- SRP-PHAT DoA ✓
-  - peaks at ~3°, 90°, ~178°, 270° (not exactly 0/90/180/270 — case angles are approximate)
-- Delay-and-Sum + MVDR beamforming ✓ (oracle angles)
-- MUSIC ✓ (block-aggregated wideband)
-- DUET ✓ (2-channel attenuation-delay masking on LF-RR)
-- Time-domain ICA ✓ (FastICA — baseline, geometry-free)
-- AuxIVA ✓ (frequency-domain ICA, currently best separation method)
-- ILRMA ✓ (NMF-guided BSS)
-- Mask-based MVDR ✓ (ILRMA TF masks as spatial covariance)
-- Coherence-based source counting ✓
-- mixture.wav demo + estimated-angle pipeline ✓
-  - SRP-PHAT re-estimates mixture.wav angles from signal
-  - beamforming uses estimated angles
-  - demo labels mixture positions as estimates, not ground truth
+Q1. Is the front speaker actually at ~2-3° or is that a systematic method bias?
+    Tuned AuxIVA now estimates 2° (was 4°). Still all methods share geometry/signal.
 
-What our methods agree on about example_mixture.wav speaker positions:
-  Front:  ~3°  (all methods; slightly left of 0°)
-  Left:   90°  (exact, all methods agree)
-  Back:   ~178° (DUET: 176°, others: 180°)
-  Right:  270° (exact, all methods agree)
+Q2. Do room acoustics transfer between example_mixture.wav and mixture.wav?
+    Plausible, unconfirmed. SepFormer-WHAMR is consistent across both files (MOS ~2.6),
+    and tuned AuxIVA params were found on example_mixture — need to validate on mixture.wav.
 
-Next up
+Immediate next
 
-1. Finish mixture.wav coverage across all methods
-   - DUET is still example_mixture.wav-only
-   - verify geometry transfers
-   - beamforming already uses estimated angles; AuxIVA/ILRMA are already geometry-free
+- Commit + push this tuning batch
+- Then start probabilistic spatial EM / GMM on example_mixture.wav
 
-Geometry and calibration
+Completed today
 
-2. Extend geometry fit to also fit speed of sound (3D grid: D, L, C)
-   - L=1.6 cm is the weak link
-   - fitting C jointly may resolve front/back ambiguity
+✓ AuxIVA tuned: n_fft=2048, hop=512, n_iter=90 (was hop=1024, iter=30)
+  Result: cross-corr sum ≈ 0.060 — less than half of ILRMA's 0.132. Big improvement.
+  DoA estimates: 2°, 90°, 180°, 270° (front sharpened from 4° → 2°)
+✓ Example demo now shows default vs tuned AuxIVA as separate variants
+  Default shown by default; tuned hidden in its own subsection
+✓ Mixture demo now shows default vs example-tuned AuxIVA as separate variants
+  Default shown by default; tuned hidden in its own subsection
+✓ ILRMA tuning finished
+  Best trial #74: n_fft=2048, hop_size=512, n_iter=110, n_components=2, score=1.2559
+✓ ILRMA default vs tuned variants added for example_mixture.wav and mixture.wav
+  Default remains visible in demo; tuned ILRMA sits in its own hidden subsection
+✓ DUET on mixture.wav — finds 90°, 119°, 184°, 270°; misses front speaker entirely
+  (LF-RR pair has poor angular resolution near 0° — known DUET limitation)
+✓ DL on mixture.wav — SepFormer-WHAMR: MOS 2.61, cross-corr 0.235 (vs 0.099 on example)
+✓ All outputs added to demo (player.html)
 
-3. Bootstrapped geometry refinement
-   - use MUSIC peaks as calibration angles instead of assuming exact 0/90/180/270
-   - tighter geometry → better MVDR/DAS steering
+Next up — hackathon priority
 
-Hyperparameter tuning
+1. Implement probabilistic spatial EM / GMM on example_mixture.wav
+   - Build TF-bin spatial features (TDoA / IPD over mic pairs)
+   - Fit a small EM model with K components = candidate speakers
+   - Output soft assignments / masks per source
+   - Use this as a principled middle ground between SRP peaks and blind BSS
+   - First goal: produce listenable separated example streams and compare against DUET / AuxIVA / ILRMA
 
-4. Define objective metrics first
-   - DoA angular error on example_mixture (ground truth ≈ 3°/90°/178°/270°)
-   - source decorrelation (pairwise cross-correlation of separated outputs)
-   - ASR quality as proxy later
+2. If the EM / GMM masks look promising: convert them into MVDR masks
+   - EM-mask MVDR is probably the fastest high-upside hybrid method to demo
+   - Keeps the story simple: probabilistic spatial clustering -> soft masks -> beamforming
 
-5. Manual grid sweeps on HPC
-   - STFT size: 256/512/1024/2048/4096
-   - AuxIVA/ILRMA: iterations (30→100→200), IP1 vs IP2
-   - AuxIVA informed init from MUSIC steering vectors
-   - DUET: mic pair, freq range, GMM vs k-means
-   - MVDR: diagonal loading, covariance window
-   - MUSIC: block size, freq range, active sources per block
+3. Only after that: decide whether ILRMA-guided MVDR still adds something
+   - Useful fallback hybrid if EM/GMM underperforms
 
-Hybrid methods
+Lower priority / optional
 
-6. ILRMA/AuxIVA-guided MVDR (multi-pass)
-   - use separated source images as oracle masks for MVDR
+4. Diarization-guided MVDR (analysis/dl_separation/diarization_mvdr.py)
+   - Ready to run, needs HuggingFace token:
+       a. Accept https://huggingface.co/pyannote/speaker-diarization-3.1
+       b. Accept https://huggingface.co/pyannote/segmentation-3.0
+       c. Token at https://huggingface.co/settings/tokens
+       d. export HF_TOKEN=hf_...  (add to ~/.zshrc)
 
-7. Probabilistic spatial tracking / EM model
-   - GMM over TDoA observations — useful for mixture.wav with unknown positions
+5. Fine-tune SepFormer 2-src → 4-src (analysis/dl_separation/hpc_finetune_sepformer4.py)
+   - Script ready. Needs: WSJ0-4Mix (LDC) or Libri4Mix (free), pip install speechbrain
+   - sbatch hpc_finetune_sepformer4.py --train-dir ... --val-dir ...
+   - ~12-24h on 1x A100
+   - SepFormer-WHAMR already beats ILRMA cross-corr at 2 speakers (0.099 vs 0.132)
 
-Deep learning (after classical/hybrid plateau)
+6. Neural ILRMA
+   - Interesting research direction, but probably too large for the current hackathon loop
 
-8. Modular hybrid: classical beamforming + learned mask
-9. End-to-end: Conv-TasNet, SepFormer — pretrained, fine-tune if needed
-   - use ideas/ notes when we get here
+Working assumptions (confirmed)
 
-Working assumptions
-
-- Mic geometry (D, L) transfers across recordings (same hardware)
-- Speed of sound approximately stable (same room)
+- Mic geometry (D, L) fixed hardware — transfers across recordings
+- AuxIVA and ILRMA are geometry-free; geometry only matters for post-hoc DoA labelling
 - Speaker positions are scene-specific — re-estimate per file
-- AuxIVA/ILRMA separation is geometry-free; DoA labeling uses geometry
-- example_mixture.wav is the calibration ground truth; mixture.wav is the actual target
+- Tuned AuxIVA (hop=512, iter=90) outperforms default ILRMA on cross-correlation
+- SepFormer-WHAMR (reverberant training) is the best off-the-shelf DL; beats ILRMA on MOS
+- The clips are already fairly clean; separation / detangling matters more than denoising
+
+Open assumptions (unconfirmed)
+
+- Front speaker at ~2° vs method bias: unknown
+- Room acoustics transferring between files: plausible, unconfirmed
+- Whether EM / GMM masks beat DUET and approach AuxIVA quality on example_mixture: unknown

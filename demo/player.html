@@ -139,6 +139,10 @@
     .badge.duet   { background: #e0e7ff; color: #4338ca; }
     .badge.mic    { background: #fef3c7; color: #92400e; }
     .badge.raw    { background: #e5e7eb; color: #374151; }
+    .badge.sfwhamr  { background: #f3e8ff; color: #6b21a8; }
+    .badge.sflibri  { background: #ede9fe; color: #5b21b6; }
+    .badge.ctlibri  { background: #fce7f3; color: #9d174d; }
+    .badge.dprnn    { background: #fdf4ff; color: #86198f; }
 
     /* ── Right panel ────────────────────────────────────── */
     .right { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
@@ -217,6 +221,10 @@
           <span><span class="dot" style="background:#4338ca"></span> DUET</span>
           <span><span class="dot" style="background:#be123c"></span> TD-ICA</span>
           <span><span class="dot" style="background:#92400e"></span> Mic</span>
+          <span><span class="dot" style="background:#6b21a8"></span> SepFormer WHAMR</span>
+          <span><span class="dot" style="background:#5b21b6"></span> SepFormer Libri3Mix</span>
+          <span><span class="dot" style="background:#9d174d"></span> ConvTasNet</span>
+          <span><span class="dot" style="background:#86198f"></span> DPRNN</span>
         </div>
         <div class="polar-wrap">
           <h3 id="polar-title"></h3>
@@ -254,7 +262,15 @@
         { key: "duet",   header: "DUET",          secDefault: false },
         { key: "tdica",  header: "Time-domain ICA",secDefault: false },
         { key: "auxiva", header: "AuxIVA",        secDefault: true },
+        { key: "auxiva_tuned", header: "AuxIVA Tuned", secDefault: false },
         { key: "ilrma",  header: "ILRMA",         secDefault: true },
+        { key: "ilrma_tuned", header: "ILRMA Tuned", secDefault: false },
+    ]},
+    { id: "dl",       label: "Deep Learning",    colDefault: true, sections: [
+        { key: "sfwhamr",  header: "SepFormer WHAMR ★",  secDefault: true },
+        { key: "sflibri",  header: "SepFormer Libri3Mix", secDefault: false },
+        { key: "ctlibri",  header: "ConvTasNet LibriMix", secDefault: false },
+        { key: "dprnn",    header: "DPRNN WHAM!",         secDefault: false },
     ]},
   ];
 
@@ -294,10 +310,57 @@
   for (const [dirKey, dirLabel, doa] of [
     ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
     ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
-  ]) {
-    allTracks.push(track(`ex_auxiva_${dirKey}`, EX, "auxiva", `${dirLabel} — AuxIVA`, `est. ${doa}°`, "auxiva", `../analysis/ica/separated/ica_${dirKey}.wav`));
-    allTracks.push(track(`ex_ilrma_${dirKey}`,  EX, "ilrma",  `${dirLabel} — ILRMA`,  `est. ${doa}°`, "ilrma",  `../analysis/ilrma/separated/ilrma_${dirKey}.wav`));
-  }
+  ])
+    allTracks.push(track(`ex_auxiva_${dirKey}`, EX, "auxiva", `${dirLabel} — AuxIVA`, `default hp · est. ${doa}° · hop=1024 iter=30`, "auxiva", `../analysis/ica/separated/ica_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","286"]
+  ])
+    allTracks.push(track(`ex_ilrma_${dirKey}`,  EX, "ilrma",  `${dirLabel} — ILRMA`,  `default hp · est. ${doa}°`, "ilrma",  `../analysis/ilrma/separated/ilrma_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","2"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_auxiva_tuned_${dirKey}`, EX, "auxiva_tuned", `${dirLabel} — AuxIVA tuned`, `tuned hp · est. ${doa}° · hop=512 iter=90`, "auxiva", `../analysis/ica/separated/ica_tuned_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","290"]
+  ])
+    allTracks.push(track(`ex_ilrma_tuned_${dirKey}`, EX, "ilrma_tuned", `${dirLabel} — ILRMA tuned`, `tuned hp · est. ${doa}° · hop=512 iter=110 · NMF_k=2`, "ilrma", `../analysis/ilrma/separated/ilrma_tuned_${dirKey}.wav`));
+
+  // ── EXAMPLE — Deep Learning ──────────────────────────────────────────────────
+  const DL = "../analysis/dl_separation/separated";
+
+  // SepFormer WHAMR — best result: reverberant training, lowest cross-corr (0.099), highest MOS (2.56)
+  for (let i = 1; i <= 2; i++)
+    allTracks.push(track(`ex_sfwhamr_${i}`, EX, "sfwhamr",
+      `Source ${i} — SepFormer WHAMR`,
+      `2-src · reverberant training · DNSMOS ${i===1?"2.48":"2.63"}`,
+      "sfwhamr", `${DL}/example_sepformer_whamr_src${i}.wav`));
+
+  // SepFormer Libri3Mix
+  for (let i = 1; i <= 3; i++)
+    allTracks.push(track(`ex_sflibri_${i}`, EX, "sflibri",
+      `Source ${i} — SepFormer Libri3Mix`,
+      `3-src · noisy LibriMix`,
+      "sflibri", `${DL}/example_sepformer_libri3mix_src${i}.wav`));
+
+  // ConvTasNet LibriMix clean
+  for (let i = 1; i <= 2; i++)
+    allTracks.push(track(`ex_ctlibri_${i}`, EX, "ctlibri",
+      `Source ${i} — ConvTasNet LibriMix`,
+      `2-src · anechoic training`,
+      "ctlibri", `${DL}/example_convtasnet_libri2mix_clean_src${i}.wav`));
+
+  // DPRNN WHAM!
+  for (let i = 1; i <= 2; i++)
+    allTracks.push(track(`ex_dprnn_${i}`, EX, "dprnn",
+      `Source ${i} — DPRNN WHAM!`,
+      `2-src · some reverb`,
+      "dprnn", `${DL}/example_dprnn_wham_clean_src${i}.wav`));
 
   // ── MIXTURE ─────────────────────────────────────────────────────────────────
   const MIX = "mixture";
@@ -314,26 +377,69 @@
     allTracks.push(track(`mix_mvdr_${key}`, MIX, "mvdr", `${lbl} — MVDR`, `SRP-PHAT est. ${lbl}`, "mvdr", `${MA}/mvdr_${key}.wav`));
   }
 
-  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"0deg","~0°"],[4,"134deg","~134°"]]) {
+  for (const [n, key, lbl] of [[1,"180deg","180°"],[2,"313deg","~313°"],[3,"0deg","~0°"],[4,"134deg","~134°"]]) {
     allTracks.push(track(`mix_mmvdr_${n}`,  MIX, "mmvdr",  `Source ${n} ${lbl} — Mask-MVDR`, `est. ${lbl}`, "mmvdr",  `${MA}/mmvdr_source_${n}_${key}.wav`));
-    allTracks.push(track(`mix_ilrma_${n}`,  MIX, "ilrma",  `Source ${n} ${lbl} — ILRMA`,     `est. ${lbl}`, "ilrma",  `${MA}/ilrma_source_${n}_${key}.wav`));
+    allTracks.push(track(`mix_ilrma_${n}`,  MIX, "ilrma",  `Source ${n} ${lbl} — ILRMA`,     `default hp · est. ${lbl}`, "ilrma",  `${MA}/ilrma_source_${n}_${key}.wav`));
   }
 
   for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
-    allTracks.push(track(`mix_auxiva_${n}`, MIX, "auxiva", `Source ${n} ${lbl} — AuxIVA`, `est. ${lbl}`, "auxiva", `${MA}/auxiva_source_${n}_${key}.wav`));
+    allTracks.push(track(`mix_auxiva_${n}`, MIX, "auxiva", `Source ${n} ${lbl} — AuxIVA`, `default hp · est. ${lbl} · hop=1024 iter=30`, "auxiva", `${MA}/auxiva_source_${n}_${key}.wav`));
+
+  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
+    allTracks.push(track(`mix_auxiva_tuned_${n}`, MIX, "auxiva_tuned", `Source ${n} ${lbl} — AuxIVA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=90`, "auxiva", `${MA}/auxiva_tuned_source_${n}_${key}.wav`));
+
+  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"358deg","~358°"],[4,"134deg","~134°"]])
+    allTracks.push(track(`mix_ilrma_tuned_${n}`, MIX, "ilrma_tuned", `Source ${n} ${lbl} — ILRMA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=110 · NMF_k=2`, "ilrma", `${MA}/ilrma_tuned_source_${n}_${key}.wav`));
+
+  for (const [n, az, lbl] of [[1,"90","90°"],[2,"119","119°"],[3,"184","~184°"],[4,"270","270°"]])
+    allTracks.push(track(`mix_duet_${n}`, MIX, "duet",
+      `${lbl} — DUET`, `est. ${lbl} · no front found`,
+      "duet", `../analysis/duet/separated/duet_mixture_source_${n}_${az}deg.wav`));
+
+  // ── MIXTURE — Deep Learning ───────────────────────────────────────────────────
+  // SepFormer WHAMR — MOS 2.61, cross-corr 0.235 (vs 0.099 on example — harder scene)
+  for (let i = 1; i <= 2; i++)
+    allTracks.push(track(`mix_sfwhamr_${i}`, MIX, "sfwhamr",
+      `Source ${i} — SepFormer WHAMR`,
+      `2-src · reverberant training · DNSMOS ${i===1?"2.68":"2.54"}`,
+      "sfwhamr", `${DL}/mixture_sepformer_whamr_src${i}.wav`));
+
+  for (let i = 1; i <= 3; i++)
+    allTracks.push(track(`mix_sflibri_${i}`, MIX, "sflibri",
+      `Source ${i} — SepFormer Libri3Mix`,
+      `3-src · noisy LibriMix`,
+      "sflibri", `${DL}/mixture_sepformer_libri3mix_src${i}.wav`));
+
+  for (let i = 1; i <= 2; i++)
+    allTracks.push(track(`mix_ctlibri_${i}`, MIX, "ctlibri",
+      `Source ${i} — ConvTasNet LibriMix`,
+      `2-src · anechoic training`,
+      "ctlibri", `${DL}/mixture_convtasnet_libri2mix_clean_src${i}.wav`));
+
+  for (let i = 1; i <= 2; i++)
+    allTracks.push(track(`mix_dprnn_${i}`, MIX, "dprnn",
+      `Source ${i} — DPRNN WHAM!`,
+      `2-src · some reverb`,
+      "dprnn", `${DL}/mixture_dprnn_wham_clean_src${i}.wav`));
 
   // ── Per-recording metadata ──────────────────────────────────────────────────
   const RECORDING_META = {
     example: {
       sub: `<code>example_mixture.wav</code> — four talkers at known positions 0° / 90° / 180° / 270°.<br>
-            Beamforming uses those angles. DoA methods estimate ~3° / 90° / ~178° / 270°.`,
+            Beamforming uses those angles. DoA methods estimate ~3° / 90° / ~178° / 270°.<br>
+            When multiple versions exist, the default clip set stays visible and alternate/tuned variants are kept in hidden subsections.`,
       polarTitle: "SRP-PHAT — example_mixture",
       polarSrc:   "../analysis/srp_phat/spatial_spectrum/srp_phat_polar.png",
       polarNote:  "SRP-PHAT spatial spectrum of <code>example_mixture.wav</code>. DoA estimates: ~3°, 90°, ~178°, 270°. Known positions: 0°, 90°, 180°, 270°.",
     },
     mixture: {
       sub: `<code>mixture.wav</code> — talker positions unknown, estimated from the signal.<br>
-            SRP-PHAT: ~2° / 90° / 270° / 358°. AuxIVA / ILRMA: ~0° / ~134° / ~178° / ~313°.`,
+            SRP-PHAT: ~2° / 90° / 270° / 358°.<br>
+            AuxIVA default DoA: ~134° / ~178° / ~313° / ~356°.<br>
+            AuxIVA transfer from <code>example_mixture.wav</code>: same DoA set on the current run.<br>
+            When multiple versions exist, the default clip set stays visible and alternate/tuned variants are kept in hidden subsections.<br>
+            ILRMA default DoA: ~0° / ~134° / 180° / ~313°.<br>
+            ILRMA transfer from <code>example_mixture.wav</code>: ~134° / ~178° / ~313° / ~358°.`,
       polarTitle: "SRP-PHAT — mixture",
       polarSrc:   "../analysis/srp_phat/mixture_spectrum/srp_phat_mixture_polar.png",
       polarNote:  "SRP-PHAT spatial spectrum of <code>mixture.wav</code>. Estimated peaks: ~2°, 90°, 270°, 358°.",

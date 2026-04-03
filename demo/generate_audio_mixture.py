@@ -7,6 +7,14 @@ Those estimated angles are loaded from analysis/srp_phat/mixture_angles.json.
 
 Beamforming methods (D&S, MVDR, mask-MVDR) use the estimated angles.
 Separation methods (AuxIVA, ILRMA) are geometry-free.
+AuxIVA is emitted in two variants:
+  - default: the original demo settings
+  - tuned: settings transferred from the finished Optuna study on
+    example_mixture.wav
+ILRMA is also emitted in two variants:
+  - default: the original demo settings
+  - tuned: settings transferred from the finished Optuna study on
+    example_mixture.wav
 
 All outputs go to demo/audio_mixture/.
 
@@ -17,6 +25,7 @@ Run from repo root:
 import itertools
 import json
 import os
+import glob
 
 import numpy as np
 import pyroomacoustics as pra
@@ -36,15 +45,50 @@ HOP        = 256
 DIAG_LOAD  = 1e-4    # MVDR regularisation
 
 # ── AuxIVA hyperparameters ────────────────────────────────────────────────────
-AUXIVA_STFT  = 2048
-AUXIVA_HOP   = 1024
-AUXIVA_ITERS = 30
+AUXIVA_VARIANTS = [
+    {
+        "key": "default",
+        "title": "AuxIVA default",
+        "prefix": "auxiva",
+        "stft": 2048,
+        "hop": 1024,
+        "iters": 30,
+        "note": "default demo hp",
+    },
+    {
+        "key": "tuned",
+        "title": "AuxIVA tuned",
+        "prefix": "auxiva_tuned",
+        "stft": 2048,
+        "hop": 512,
+        "iters": 90,
+        "note": "tuned on example_mixture.wav",
+    },
+]
 
 # ── ILRMA hyperparameters ─────────────────────────────────────────────────────
-ILRMA_STFT      = 2048
-ILRMA_HOP       = 1024
-ILRMA_ITERS     = 100
-ILRMA_NMF_K     = 4
+ILRMA_VARIANTS = [
+    {
+        "key": "default",
+        "title": "ILRMA default",
+        "prefix": "ilrma",
+        "stft": 2048,
+        "hop": 1024,
+        "iters": 100,
+        "n_components": 4,
+        "note": "default demo hp",
+    },
+    {
+        "key": "tuned",
+        "title": "ILRMA tuned",
+        "prefix": "ilrma_tuned",
+        "stft": 2048,
+        "hop": 512,
+        "iters": 110,
+        "n_components": 2,
+        "note": "tuned on example_mixture.wav",
+    },
+]
 
 MIC_LABELS = ["LF", "LR", "RF", "RR"]
 
@@ -94,6 +138,12 @@ def save_wav(path, signal, sr):
     out  = np.clip(signal / peak * 0.9, -1.0, 1.0)
     wavfile.write(path, sr, (out * 32767).astype(np.int16))
     print(f"  saved  {os.path.relpath(path)}")
+
+
+def remove_stale_outputs(pattern):
+    for path in glob.glob(os.path.join(OUT_DIR, pattern)):
+        os.remove(path)
+        print(f"  removed stale  {os.path.relpath(path)}")
 
 
 # ── Time-domain beamformers ───────────────────────────────────────────────────
@@ -216,55 +266,117 @@ for az_deg in ESTIMATED_ANGLES:
              mvdr_blocking(channels, phi, sr), sr)
 
 # ── AuxIVA ────────────────────────────────────────────────────────────────────
-print(f"\n  AuxIVA (iter={AUXIVA_ITERS}, STFT={AUXIVA_STFT}) ...")
-analysis_win_a  = pra.hann(AUXIVA_STFT)
-synthesis_win_a = pra.transform.stft.compute_synthesis_window(analysis_win_a, AUXIVA_HOP)
-X_a = pra.transform.stft.analysis(data, AUXIVA_STFT, AUXIVA_HOP, win=analysis_win_a)
-Y_a, W_a = pra.bss.auxiva(X_a, n_src=4, n_iter=AUXIVA_ITERS, proj_back=False,
-                           return_filters=True)
-gains_a = pra.bss.projection_back(Y_a, X_a.mean(axis=2))
-Y_a_mono = Y_a * gains_a[None, :, :]
-S_a = pra.transform.stft.synthesis(Y_a_mono, AUXIVA_STFT, AUXIVA_HOP,
-                                    win=synthesis_win_a)[:data.shape[0], :].real
-A_a = np.linalg.inv(W_a)
+for variant in AUXIVA_VARIANTS:
+    print(
+        f"\n  {variant['title']} (iter={variant['iters']}, STFT={variant['stft']}, "
+        f"hop={variant['hop']}; {variant['note']}) ..."
+    )
+    remove_stale_outputs(f"{variant['prefix']}_source_*.wav")
+    analysis_win_a  = pra.hann(variant["stft"])
+    synthesis_win_a = pra.transform.stft.compute_synthesis_window(analysis_win_a, variant["hop"])
+    X_a = pra.transform.stft.analysis(data, variant["stft"], variant["hop"], win=analysis_win_a)
+    Y_a, W_a = pra.bss.auxiva(
+        X_a,
+        n_src=4,
+        n_iter=variant["iters"],
+        proj_back=False,
+        return_filters=True,
+    )
+    gains_a = pra.bss.projection_back(Y_a, X_a.mean(axis=2))
+    Y_a_mono = Y_a * gains_a[None, :, :]
+    S_a = pra.transform.stft.synthesis(
+        Y_a_mono,
+        variant["stft"],
+        variant["hop"],
+        win=synthesis_win_a,
+    )[:data.shape[0], :].real
+    A_a = np.linalg.inv(W_a)
 
-# DoA per source
-for k in range(4):
-    img_stft = Y_a[:, :, k][:, :, None] * A_a[:, :, k][None, :, :]
-    img_chs  = [pra.transform.stft.synthesis(img_stft[:, :, m], AUXIVA_STFT, AUXIVA_HOP,
-                                              win=synthesis_win_a)[:data.shape[0]].real
-                for m in range(4)]
-    doa  = srp_phat_best_angle(img_chs, sr)
-    lbl  = angle_label(doa)
-    path = os.path.join(OUT_DIR, f"auxiva_source_{k+1}_{lbl}.wav")
-    save_wav(path, S_a[:, k], sr)
+    for k in range(4):
+        img_stft = Y_a[:, :, k][:, :, None] * A_a[:, :, k][None, :, :]
+        img_chs  = [
+            pra.transform.stft.synthesis(
+                img_stft[:, :, m],
+                variant["stft"],
+                variant["hop"],
+                win=synthesis_win_a,
+            )[:data.shape[0]].real
+            for m in range(4)
+        ]
+        doa  = srp_phat_best_angle(img_chs, sr)
+        lbl  = angle_label(doa)
+        path = os.path.join(OUT_DIR, f"{variant['prefix']}_source_{k+1}_{lbl}.wav")
+        save_wav(path, S_a[:, k], sr)
 
 # ── ILRMA ─────────────────────────────────────────────────────────────────────
-print(f"\n  ILRMA (iter={ILRMA_ITERS}, NMF_k={ILRMA_NMF_K}, STFT={ILRMA_STFT}) ...")
-analysis_win_i  = pra.hann(ILRMA_STFT)
-synthesis_win_i = pra.transform.stft.compute_synthesis_window(analysis_win_i, ILRMA_HOP)
-X_i = pra.transform.stft.analysis(data, ILRMA_STFT, ILRMA_HOP, win=analysis_win_i)
-Y_i, W_i = pra.bss.ilrma(X_i, n_src=4, n_iter=ILRMA_ITERS, proj_back=False,
-                           n_components=ILRMA_NMF_K, return_filters=True)
-gains_i = pra.bss.projection_back(Y_i, X_i.mean(axis=2))
-Y_i_mono = Y_i * gains_i[None, :, :]
-S_i = pra.transform.stft.synthesis(Y_i_mono, ILRMA_STFT, ILRMA_HOP,
-                                    win=synthesis_win_i)[:data.shape[0], :].real
-A_i = np.linalg.inv(W_i.transpose(0, 2, 1)).transpose(0, 2, 1)
+mmvdr_state = None
+for variant in ILRMA_VARIANTS:
+    print(
+        f"\n  {variant['title']} (iter={variant['iters']}, NMF_k={variant['n_components']}, "
+        f"STFT={variant['stft']}, hop={variant['hop']}; {variant['note']}) ..."
+    )
+    remove_stale_outputs(f"{variant['prefix']}_source_*.wav")
+    analysis_win_i = pra.hann(variant["stft"])
+    synthesis_win_i = pra.transform.stft.compute_synthesis_window(
+        analysis_win_i, variant["hop"]
+    )
+    X_i = pra.transform.stft.analysis(data, variant["stft"], variant["hop"], win=analysis_win_i)
+    Y_i, W_i = pra.bss.ilrma(
+        X_i,
+        n_src=4,
+        n_iter=variant["iters"],
+        proj_back=False,
+        n_components=variant["n_components"],
+        return_filters=True,
+    )
+    gains_i = pra.bss.projection_back(Y_i, X_i.mean(axis=2))
+    Y_i_mono = Y_i * gains_i[None, :, :]
+    S_i = pra.transform.stft.synthesis(
+        Y_i_mono,
+        variant["stft"],
+        variant["hop"],
+        win=synthesis_win_i,
+    )[:data.shape[0], :].real
+    A_i = np.linalg.inv(W_i.transpose(0, 2, 1)).transpose(0, 2, 1)
 
-# DoA per source
-for k in range(4):
-    img_stft = Y_i[:, :, k][:, :, None] * A_i[:, :, k][None, :, :]
-    img_chs  = [pra.transform.stft.synthesis(img_stft[:, :, m], ILRMA_STFT, ILRMA_HOP,
-                                              win=synthesis_win_i)[:data.shape[0]].real
-                for m in range(4)]
-    doa  = srp_phat_best_angle(img_chs, sr)
-    lbl  = angle_label(doa)
-    path = os.path.join(OUT_DIR, f"ilrma_source_{k+1}_{lbl}.wav")
-    save_wav(path, S_i[:, k], sr)
+    for k in range(4):
+        img_stft = Y_i[:, :, k][:, :, None] * A_i[:, :, k][None, :, :]
+        img_chs = [
+            pra.transform.stft.synthesis(
+                img_stft[:, :, m],
+                variant["stft"],
+                variant["hop"],
+                win=synthesis_win_i,
+            )[:data.shape[0]].real
+            for m in range(4)
+        ]
+        doa = srp_phat_best_angle(img_chs, sr)
+        lbl = angle_label(doa)
+        path = os.path.join(OUT_DIR, f"{variant['prefix']}_source_{k+1}_{lbl}.wav")
+        save_wav(path, S_i[:, k], sr)
+
+    if variant["key"] == "default":
+        mmvdr_state = {
+            "stft": variant["stft"],
+            "hop": variant["hop"],
+            "X": X_i,
+            "Y": Y_i,
+            "A": A_i,
+            "synthesis_win": synthesis_win_i,
+        }
 
 # ── Mask-MVDR ─────────────────────────────────────────────────────────────────
-print(f"\n  Mask-MVDR using ILRMA masks ...")
+if mmvdr_state is None:
+    raise RuntimeError("Default ILRMA state missing for Mask-MVDR generation.")
+
+print(f"\n  Mask-MVDR using default ILRMA masks ...")
+remove_stale_outputs("mmvdr_source_*.wav")
+ILRMA_STFT = mmvdr_state["stft"]
+ILRMA_HOP = mmvdr_state["hop"]
+X_i = mmvdr_state["X"]
+Y_i = mmvdr_state["Y"]
+A_i = mmvdr_state["A"]
+synthesis_win_i = mmvdr_state["synthesis_win"]
 freqs_hz = np.fft.rfftfreq(ILRMA_STFT, 1.0 / sr)
 X_fmt    = X_i.transpose(1, 2, 0)                                # (F, M, T)
 Y_power  = np.abs(Y_i) ** 2
