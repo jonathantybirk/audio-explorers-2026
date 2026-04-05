@@ -266,7 +266,8 @@
         { key: "duet",   header: "DUET",          secDefault: false },
         { key: "tdica",  header: "Time-domain ICA",secDefault: false },
         { key: "auxiva", header: "AuxIVA",        secDefault: true },
-        { key: "auxiva_tuned", header: "AuxIVA Tuned", secDefault: false },
+        { key: "auxiva_tuned",  header: "AuxIVA Tuned",          secDefault: false },
+        { key: "auxiva_mtuned", header: "AuxIVA Mixture-Tuned", secDefault: false },
         { key: "ilrma",  header: "ILRMA",         secDefault: true },
         { key: "ilrma_tuned", header: "ILRMA Tuned", secDefault: false },
         { key: "spatial_em", header: "Spatial EM", secDefault: false },
@@ -339,7 +340,13 @@
     ["0deg_front","0° Front","2"],["90deg_left","90° Left","90"],
     ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
   ])
-    allTracks.push(track(`ex_auxiva_tuned_${dirKey}`, EX, "auxiva_tuned", `${dirLabel} — AuxIVA tuned`, `tuned hp · est. ${doa}° · hop=512 iter=90`, "auxiva", `../analysis/ica/separated/ica_tuned_${dirKey}.wav`));
+    allTracks.push(track(`ex_auxiva_tuned_${dirKey}`, EX, "auxiva_tuned", `${dirLabel} — AuxIVA tuned`, `example-tuned hp · est. ${doa}° · n_fft=2048 hop=512 iter=90`, "auxiva", `../analysis/ica/separated/ica_tuned_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_auxiva_mtuned_${dirKey}`, EX, "auxiva_mtuned", `${dirLabel} — AuxIVA mixture-tuned`, `mixture-tuned hp · est. ${doa}° · n_fft=512 hop=128 iter=140`, "auxiva", `../analysis/ica/separated/ica_mtuned_${dirKey}.wav`));
 
   for (const [dirKey, dirLabel, doa] of [
     ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
@@ -412,10 +419,17 @@
   for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
     allTracks.push(track(`mix_auxiva_${n}`, MIX, "auxiva", `Source ${n} ${lbl} — AuxIVA`, `default hp · est. ${lbl} · hop=1024 iter=30`, "auxiva", `${MA}/auxiva_source_${n}_${key}.wav`));
 
-  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
-    allTracks.push(track(`mix_auxiva_tuned_${n}`, MIX, "auxiva_tuned", `Source ${n} ${lbl} — AuxIVA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=90`, "auxiva", `${MA}/auxiva_tuned_source_${n}_${key}.wav`));
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","~0° Front","356"],["90deg_left","~90° Left","135"],
+    ["180deg_back","~180° Back","178"],["270deg_right","~270° Right","313"]
+  ])
+    allTracks.push(track(`mix_auxiva_tuned_${dirKey}`, MIX, "auxiva_tuned", `${dirLabel} — AuxIVA example-tuned`, `example-tuned hp · est. ${doa}° · n_fft=2048 hop=512 iter=90`, "auxiva", `../analysis/ica/separated/mixture_ica_tuned_${dirKey}.wav`));
 
-  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"358deg","~358°"],[4,"134deg","~134°"]])
+  // AuxIVA — mixture-tuned (Optuna 80 trials on mixture.wav: n_fft=512, hop=128, n_iter=140)
+  for (const [n, key, lbl] of [[1,"119deg","~119°"],[2,"134deg","~134°"],[3,"312deg","~312°"],[4,"356deg","~356°"]])
+    allTracks.push(track(`mix_auxiva_mtuned_${n}`, MIX, "auxiva_mtuned", `Source ${n} ${lbl} — AuxIVA mixture-tuned`, `mixture-tuned hp · est. ${lbl} · n_fft=512 hop=128 iter=140`, "auxiva", `../analysis/ica/separated/mixture_ica_mtuned_source_${n}_${key}.wav`));
+
+  for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
     allTracks.push(track(`mix_ilrma_tuned_${n}`, MIX, "ilrma_tuned", `Source ${n} ${lbl} — ILRMA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=110 · NMF_k=2`, "ilrma", `${MA}/ilrma_tuned_source_${n}_${key}.wav`));
 
   for (const [n, az, lbl] of [[1,"90","90°"],[2,"119","119°"],[3,"184","~184°"],[4,"270","270°"]])
@@ -465,12 +479,12 @@
     mixture: {
       sub: `<code>mixture.wav</code> — talker positions unknown, estimated from the signal.<br>
             SRP-PHAT: ~2° / 90° / 270° / 358°.<br>
-            AuxIVA default DoA: ~134° / ~178° / ~313° / ~356°.<br>
-            AuxIVA transfer from <code>example_mixture.wav</code>: same DoA set on the current run.<br>
-            When multiple versions exist, the default clip set stays visible and alternate/tuned variants are kept in hidden subsections.<br>
-            ILRMA default DoA: ~0° / ~134° / 180° / ~313°.<br>
-            ILRMA transfer from <code>example_mixture.wav</code>: ~134° / ~178° / ~313° / ~358°.<br>
-            Diarization-guided MVDR is included as an experimental beamforming subsection, but pyannote only found 2 speakers on this file as well (mean DNSMOS 1.92).`,
+            AuxIVA default: ~134° / ~178° / ~313° / ~356°.<br>
+            AuxIVA example-tuned (n_fft=2048 hop=512 iter=90): ~135° / ~178° / ~313° / ~356° — all four cardinals found cleanly.<br>
+            AuxIVA mixture-tuned (Optuna 80 trials on mixture.wav, n_fft=512 hop=128 iter=140): collapsed two sources to ~90°, missing 180° — blind cross-corr metric did not predict spatial quality here.<br>
+            ILRMA default: ~0° / ~134° / 180° / ~313°. ILRMA transfer from example: ~134° / ~178° / ~313° / ~358°.<br>
+            Diarization-guided MVDR: pyannote found 2 speakers only (mean DNSMOS 1.92).<br>
+            When multiple versions exist, the default clip set stays visible; alternate variants are in hidden subsections.`,
       polarTitle: "SRP-PHAT — mixture",
       polarSrc:   "../analysis/srp_phat/mixture_spectrum/srp_phat_mixture_polar.png",
       polarNote:  "SRP-PHAT spatial spectrum of <code>mixture.wav</code>. Estimated peaks: ~2°, 90°, 270°, 358°.",

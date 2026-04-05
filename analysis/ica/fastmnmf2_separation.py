@@ -1,25 +1,28 @@
 """
-Frequency-domain ICA source separation on example_mixture.wav.
+FastMNMF2 source separation on example_mixture.wav.
 
-This script uses AuxIVA (Auxiliary-function Independent Vector Analysis),
-which is the practical frequency-domain ICA variant for reverberant,
-convolutive mixtures. That fixes the core problem with the earlier
-time-domain FastICA attempt: room mixing is not instantaneous, so real-valued
-mixing vectors do not preserve the per-microphone phase delays needed for DoA.
+FastMNMF2 (Fast Multichannel NMF with Jointly-Diagonalizable Spatial Covariance
+Matrices) is the next step beyond ILRMA. The key difference:
 
-Pipeline:
-  1. STFT of the 4-channel mixture.
-  2. AuxIVA separation in the STFT domain.
-  3. Reconstruct each separated source as:
-     - a mono listenable render (projection-back to the average mic), and
-     - a 4-channel source image using the complex frequency-domain mixing model.
-  4. Run SRP-PHAT on each source image to estimate its DoA.
-  5. Save sorted WAVs and diagnostic plots.
+  - ILRMA assumes the mixing matrix diagonalises the spatial covariance per
+    source, but estimates W by gradient descent on a likelihood that is only
+    locally consistent with that assumption.
+  - FastMNMF2 directly parameterises the spatial covariance via a shared
+    diagonaliser Q (one matrix, all frequencies) plus per-source diagonal
+    components. This is a stricter but more principled spatial model, and the
+    update equations are closed-form EM steps — no convergence instability.
+
+In practice FastMNMF2 tends to outperform ILRMA when:
+  - The scene is reverberant (SCMs don't factorise cleanly).
+  - Data is limited (our 21s clip) — fewer spatial degrees of freedom.
+  - Sources are close in angle (front/back pair).
+
+The downside: no demixing matrix W is returned — only source images. So DoA
+is estimated directly from the returned 4-channel source images via SRP-PHAT.
 
 Outputs saved to analysis/ica/separated/
 """
 
-import argparse
 import glob
 import itertools
 import json
@@ -31,14 +34,15 @@ import pyroomacoustics as pra
 from scipy.io import wavfile
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# "example"  → example_mixture.wav  (known speaker positions)
+# "mixture"  → mixture.wav          (unknown positions)
+WAV_KEY = "example"
+
 _WAV_PATHS = {
     "example": os.path.join(REPO_ROOT, "DONT-TOUCH/Software Case/example_mixture.wav"),
     "mixture": os.path.join(REPO_ROOT, "DONT-TOUCH/Software Case/mixture.wav"),
 }
-_parser = argparse.ArgumentParser()
-_parser.add_argument("--wav", choices=["example", "mixture"], default="example")
-_args = _parser.parse_args()
-WAV_KEY = _args.wav
 WAV_PATH = _WAV_PATHS[WAV_KEY]
 GEO_PATH = os.path.join(REPO_ROOT, "data", "mic_geometry.json")
 OUT_DIR = os.path.join(os.path.dirname(__file__), "separated")
@@ -51,44 +55,26 @@ CARDINAL_KEYS = {
     270: "270deg_right",
 }
 
-_pfx = "" if WAV_KEY == "example" else "mixture_"
-
-AUXIVA_VARIANTS = [
+VARIANTS = [
     {
-        "key": "default",
-        "label": "default",
-        "title": "AuxIVA default",
+        "key": "fmnmf2_default",
+        "title": "FastMNMF2 default",
         "stft_size": 2048,
         "hop_size": 1024,
-        "n_iter": 30,
-        "stable_prefix": f"{_pfx}ica",
-        "section_note": "default hp",
+        "n_iter": 50,
+        "n_components": 8,
+        "prefix": "fmnmf2",
     },
     {
-        "key": "tuned",
-        "label": "tuned (example-optimised)",
-        "title": "AuxIVA tuned (example-optimised)",
+        "key": "fmnmf2_tuned",
+        "title": "FastMNMF2 tuned",
         "stft_size": 2048,
         "hop_size": 512,
-        "n_iter": 90,
-        "stable_prefix": f"{_pfx}ica_tuned",
-        "section_note": "hp tuned on example_mixture",
-    },
-    {
-        "key": "mixture_tuned",
-        "label": "tuned (mixture-optimised)",
-        "title": "AuxIVA tuned (mixture-optimised)",
-        "stft_size": 512,
-        "hop_size": 128,
-        "n_iter": 140,
-        "stable_prefix": f"{_pfx}ica_mtuned",
-        "section_note": "hp tuned directly on mixture.wav (Optuna 80 trials)",
+        "n_iter": 100,
+        "n_components": 4,
+        "prefix": "fmnmf2_tuned",
     },
 ]
-
-# When running on example, skip default (already done) and only run the two tuned variants
-if WAV_KEY == "example":
-    AUXIVA_VARIANTS = [v for v in AUXIVA_VARIANTS if v["key"] != "default"]
 
 
 # ── Geometry ──────────────────────────────────────────────────────────────────
@@ -100,10 +86,10 @@ L = geo["intra_ear_spacing_m"]
 C = geo["speed_of_sound_m_s"]
 
 MIC_POS = np.array([
-    [D / 2, L / 2],   # LF
-    [D / 2, -L / 2],  # LR
-    [-D / 2, L / 2],  # RF
-    [-D / 2, -L / 2], # RR
+    [D / 2,  L / 2],   # LF
+    [D / 2, -L / 2],   # LR
+    [-D / 2,  L / 2],  # RF
+    [-D / 2, -L / 2],  # RR
 ], dtype=np.float64)
 
 ALL_PAIRS = list(itertools.combinations(range(4), 2))
@@ -173,120 +159,93 @@ def srp_phat_spectrum(channels, sr, azimuths):
     return power
 
 
-# ── AuxIVA separation ─────────────────────────────────────────────────────────
-def auxiva_separate(data, stft_size, hop_size, n_iter):
+def nearest_cardinal_label(angle_deg):
+    cardinals = [0, 90, 180, 270]
+    return min(cardinals, key=lambda ref: abs(((angle_deg - ref + 180) % 360) - 180))
+
+
+# ── FastMNMF2 separation ──────────────────────────────────────────────────────
+def fastmnmf2_separate(data, stft_size, hop_size, n_iter, n_components):
     analysis_win = pra.hann(stft_size)
     synthesis_win = pra.transform.stft.compute_synthesis_window(analysis_win, hop_size)
 
+    # (nframes, nfrequencies, nchannels)
     X = pra.transform.stft.analysis(data, stft_size, hop_size, win=analysis_win)
-    Y, W = pra.bss.auxiva(
+
+    # Returns (nchannels, nframes, nfrequencies, nsources) when mic_index='all'
+    Y_all = pra.bss.fastmnmf2(
         X,
         n_src=data.shape[1],
         n_iter=n_iter,
-        proj_back=False,
-        return_filters=True,
+        n_components=n_components,
+        mic_index="all",
     )
+    # Y_all: (nchannels, nframes, nfrequencies, nsources)
 
-    # Back-project to the average microphone for a stable mono render.
-    gains = pra.bss.projection_back(Y, X.mean(axis=2))
-    Y_mono = Y * gains[None, :, :]
-    mono_sources = pra.transform.stft.synthesis(Y_mono, stft_size, hop_size, win=synthesis_win)
+    n_sources = Y_all.shape[3]
+    n_samples = data.shape[0]
 
-    # Frequency-domain mixing matrices for source-image reconstruction.
-    A = np.linalg.inv(W)
+    # Synthesise per-source signals
+    mono_sources = []
+    image_channels_per_source = []
 
-    return X, Y, A, mono_sources, synthesis_win
+    for k in range(n_sources):
+        # Average across mics for a stable mono render
+        Y_k_avg = Y_all[:, :, :, k].mean(axis=0)  # (nframes, nfrequencies)
+        mono = pra.transform.stft.synthesis(Y_k_avg, stft_size, hop_size, win=synthesis_win)
+        mono_sources.append(mono[:n_samples].real.astype(np.float64))
 
+        # Per-mic time-domain signals for DoA via SRP-PHAT
+        chans = []
+        for mic in range(Y_all.shape[0]):
+            sig = pra.transform.stft.synthesis(
+                Y_all[mic, :, :, k], stft_size, hop_size, win=synthesis_win
+            )
+            chans.append(sig[:n_samples].real.astype(np.float64))
+        image_channels_per_source.append(chans)
 
-def reconstruct_source_image_channels(Y, A, source_idx, stft_size, hop_size, synthesis_win, n_samples):
-    # Keep the source-specific spatial image on all four microphones.
-    image_stft = Y[:, :, source_idx][:, :, None] * A[:, :, source_idx][None, :, :]
-    channels = []
-    for mic_idx in range(image_stft.shape[2]):
-        sig = pra.transform.stft.synthesis(
-            image_stft[:, :, mic_idx],
-            stft_size,
-            hop_size,
-            win=synthesis_win,
-        )
-        channels.append(sig[:n_samples].real.astype(np.float64))
-    return channels
-
-
-def nearest_cardinal_label(angle_deg):
-    cardinals = [0, 90, 180, 270]
-    best = min(cardinals, key=lambda ref: abs(((angle_deg - ref + 180) % 360) - 180))
-    return best
+    mono_sources = np.stack(mono_sources, axis=1)  # (n_samples, n_sources)
+    return mono_sources, image_channels_per_source
 
 
-def cardinal_key(angle_deg):
-    return CARDINAL_KEYS[angle_deg]
-
-
-def variant_exact_prefix(variant):
-    return "ica_source" if variant["stable_prefix"] == "ica" else f'{variant["stable_prefix"]}_source'
-
-
-def remove_stale_variant_outputs(variant):
-    stable_prefix = variant["stable_prefix"]
-    exact_prefix = variant_exact_prefix(variant)
-
-    patterns = [
-        f"{exact_prefix}_*deg.wav",
-        f"{stable_prefix}_spectrograms.png",
-        f"{stable_prefix}_polar.png",
-    ]
-    patterns.extend(f"{stable_prefix}_{cardinal_name}.wav" for cardinal_name in CARDINAL_KEYS.values())
-
-    for pattern in patterns:
-        for stale_path in glob.glob(os.path.join(OUT_DIR, pattern)):
-            os.remove(stale_path)
-
-
+# ── Run variant ───────────────────────────────────────────────────────────────
 def run_variant(variant, data, sr, azimuths):
     print(
-        "Running "
-        f'{variant["title"]} '
-        f'(4 sources, STFT={variant["stft_size"]}, '
-        f'hop={variant["hop_size"]}, iterations={variant["n_iter"]}) ...'
+        f"\nRunning {variant['title']} "
+        f"(STFT={variant['stft_size']}, hop={variant['hop_size']}, "
+        f"iter={variant['n_iter']}, n_components={variant['n_components']}) ..."
     )
-    X, Y, A, mono_sources, synthesis_win = auxiva_separate(
+
+    mono_sources, image_channels_per_source = fastmnmf2_separate(
         data,
         stft_size=variant["stft_size"],
         hop_size=variant["hop_size"],
         n_iter=variant["n_iter"],
+        n_components=variant["n_components"],
     )
-    mono_sources = mono_sources[: data.shape[0], :].real.astype(np.float64)
-    print(f"  STFT shape: {X.shape[0]} frames × {X.shape[1]} bins × {X.shape[2]} channels")
+    n_sources = mono_sources.shape[1]
 
     print("\nSeparation diagnostics:")
     print("  Source RMS amplitudes:")
-    for k in range(mono_sources.shape[1]):
+    for k in range(n_sources):
         rms = np.sqrt(np.mean(mono_sources[:, k] ** 2))
         print(f"    Component {k}: RMS = {rms:.4f}")
 
     print("  Pairwise cross-correlation (off-diagonal near 0 is good):")
     corr = np.corrcoef(mono_sources.T)
+    corr_sum = float(np.sum(np.abs(corr[~np.eye(n_sources, dtype=bool)])))
     for i in range(corr.shape[0]):
         row = "    " + "  ".join(f"{corr[i, j]:+.3f}" for j in range(corr.shape[1]))
         print(row)
+    print(f"  Cross-corr sum (lower is better): {corr_sum:.4f}")
 
-    print("\nEstimating DoA from AuxIVA source images via SRP-PHAT ...")
+    print("\nEstimating DoA via SRP-PHAT on FastMNMF2 source images ...")
     doas = []
     power_grid = []
     cardinal_labels = []
 
-    for k in range(mono_sources.shape[1]):
-        image_channels = reconstruct_source_image_channels(
-            Y,
-            A,
-            source_idx=k,
-            stft_size=variant["stft_size"],
-            hop_size=variant["hop_size"],
-            synthesis_win=synthesis_win,
-            n_samples=data.shape[0],
-        )
-        power = srp_phat_spectrum(image_channels, sr, azimuths)
+    for k in range(n_sources):
+        power = srp_phat_spectrum(image_channels_per_source[k], sr, azimuths)
         best_az = float(azimuths[np.argmax(power)])
         doas.append(best_az)
         power_grid.append(power)
@@ -297,18 +256,23 @@ def run_variant(variant, data, sr, azimuths):
     power_grid = np.stack(power_grid, axis=0)
     order = list(np.argsort(doas))
 
+    # ── Save audio ────────────────────────────────────────────────────────────
+    prefix = variant["prefix"]
+    for stale in glob.glob(os.path.join(OUT_DIR, f"{prefix}_*.wav")):
+        os.remove(stale)
+    for stale in glob.glob(os.path.join(OUT_DIR, f"{prefix}_*.png")):
+        os.remove(stale)
+
     print("\nSaving separated audio ...")
-    remove_stale_variant_outputs(variant)
-    stable_prefix = variant["stable_prefix"]
-    exact_prefix = variant_exact_prefix(variant)
     for rank, k in enumerate(order):
         az = doas[k]
-        exact_path = os.path.join(OUT_DIR, f"{exact_prefix}_{rank + 1}_{az:.0f}deg.wav")
-        stable_path = os.path.join(OUT_DIR, f"{stable_prefix}_{cardinal_key(cardinal_labels[k])}.wav")
+        cardinal = CARDINAL_KEYS.get(cardinal_labels[k], f"{cardinal_labels[k]}deg")
+        exact_path = os.path.join(OUT_DIR, f"{prefix}_source_{rank + 1}_{az:.0f}deg.wav")
+        stable_path = os.path.join(OUT_DIR, f"{prefix}_{cardinal}.wav")
         save_wav(exact_path, mono_sources[:, k], sr)
         save_wav(stable_path, mono_sources[:, k], sr)
 
-    print("\nPlotting spectrograms ...")
+    # ── Spectrogram plot ─────────────────────────────────────────────────────
     fig, axes = plt.subplots(2, 2, figsize=(14, 8))
     for rank, k in enumerate(order):
         ax = axes[rank // 2][rank % 2]
@@ -319,14 +283,14 @@ def run_variant(variant, data, sr, azimuths):
         )
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Frequency (Hz)")
-    plt.suptitle(f"{variant['title']} sources — example_mixture.wav", fontsize=13)
+    plt.suptitle(f"{variant['title']} sources — {WAV_KEY}_mixture.wav", fontsize=13)
     plt.tight_layout()
-    spec_path = os.path.join(OUT_DIR, f"{stable_prefix}_spectrograms.png")
+    spec_path = os.path.join(OUT_DIR, f"{prefix}_spectrograms.png")
     plt.savefig(spec_path, dpi=150)
     plt.close()
     print(f"  saved  {os.path.relpath(spec_path)}")
 
-    print("Plotting per-source SRP-PHAT polars ...")
+    # ── Polar plot ────────────────────────────────────────────────────────────
     fig, axes = plt.subplots(2, 2, figsize=(12, 12), subplot_kw={"projection": "polar"})
     for rank, k in enumerate(order):
         ax = axes[rank // 2][rank % 2]
@@ -349,46 +313,30 @@ def run_variant(variant, data, sr, azimuths):
             f"(nearest {cardinal_labels[k]}°)",
             pad=14,
         )
-    plt.suptitle(f"Per-source SRP-PHAT from {variant['title']} source images", fontsize=12)
+    plt.suptitle(f"Per-source SRP-PHAT — {variant['title']}", fontsize=12)
     plt.tight_layout()
-    polar_path = os.path.join(OUT_DIR, f"{stable_prefix}_polar.png")
+    polar_path = os.path.join(OUT_DIR, f"{prefix}_polar.png")
     plt.savefig(polar_path, dpi=150)
     plt.close()
     print(f"  saved  {os.path.relpath(polar_path)}")
 
     print("\n════════════════════════════════════════════════════════════════════════")
-    print(f"  ICA source separation — example_mixture.wav — {variant['title']}")
-    print(
-        f"  Method: AuxIVA ({variant['n_iter']} iterations, "
-        f"STFT {variant['stft_size']}, hop {variant['hop_size']})"
-    )
+    print(f"  {variant['title']} — {WAV_KEY}_mixture.wav")
     print("  Estimated source directions (sorted):")
     for rank, k in enumerate(order):
-        print(
-            f"    Source {rank + 1}: {doas[k]:.1f}°  "
-            f"(nearest cardinal {cardinal_labels[k]}°)"
-        )
-    print("  Expected: 0°, 90°, 180°, 270°")
+        print(f"    Source {rank + 1}: {doas[k]:.1f}°  (nearest {cardinal_labels[k]}°)")
+    if WAV_KEY == "example":
+        print("  Expected: 0°, 90°, 180°, 270°")
+    print(f"  Cross-correlation sum: {corr_sum:.4f}")
     print("════════════════════════════════════════════════════════════════════════")
-
-    return {
-        "variant": variant,
-        "doas": doas,
-        "order": order,
-        "cardinal_labels": cardinal_labels,
-    }
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 print(f"Loading {os.path.relpath(WAV_PATH)} ...")
 sr, data = load_wav(WAV_PATH)
-print(
-    f"  {data.shape[0]} samples  |  {data.shape[1]} channels  "
-    f"|  {sr} Hz  |  {data.shape[0] / sr:.1f} s\n"
-)
+print(f"  {data.shape[0]} samples  |  {data.shape[1]} channels  |  {sr} Hz  |  {data.shape[0] / sr:.1f} s\n")
 
 azimuths = np.linspace(0, 360, 720, endpoint=False)
-variant_results = []
-for variant in AUXIVA_VARIANTS:
+for variant in VARIANTS:
     print("\n" + "=" * 72)
-    variant_results.append(run_variant(variant, data, sr, azimuths))
+    run_variant(variant, data, sr, azimuths)

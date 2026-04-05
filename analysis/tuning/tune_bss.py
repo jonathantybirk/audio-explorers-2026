@@ -175,9 +175,9 @@ def make_ilrma_objective(data, sr):
 
 
 # ── Study runner ──────────────────────────────────────────────────────────────
-def run_study(method, data, sr, n_trials):
+def run_study(method, data, sr, n_trials, wav_key="example"):
     print(f"\n{'='*60}")
-    print(f"  Tuning {method.upper()}  |  {n_trials} trials")
+    print(f"  Tuning {method.upper()}  |  {n_trials} trials  |  wav={wav_key}")
     print(f"  Objective: -{W_CORR}*corr_score + {W_MOS}*dnsmos_ovrl")
     print(f"{'='*60}")
 
@@ -187,13 +187,14 @@ def run_study(method, data, sr, n_trials):
         objective = make_ilrma_objective(data, sr)
 
     study = optuna.create_study(direction="maximize",
-                                study_name=f"{method}_tuning",
+                                study_name=f"{method}_{wav_key}_tuning",
                                 sampler=optuna.samplers.TPESampler(seed=42))
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
     # Save all trial results
     df = study.trials_dataframe()
-    csv_path = os.path.join(OUT_DIR, f"{method}_study.csv")
+    suffix = f"_{wav_key}" if wav_key != "example" else ""
+    csv_path = os.path.join(OUT_DIR, f"{method}{suffix}_study.csv")
     df.to_csv(csv_path, index=False)
     print(f"\n  All trials saved → {os.path.relpath(csv_path)}")
 
@@ -212,20 +213,27 @@ def run_study(method, data, sr, n_trials):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    _WAV_PATHS = {
+        "example": os.path.join(REPO_ROOT, "DONT-TOUCH", "Software Case", "example_mixture.wav"),
+        "mixture": os.path.join(REPO_ROOT, "DONT-TOUCH", "Software Case", "mixture.wav"),
+    }
+
     parser = argparse.ArgumentParser(description="BSS hyperparameter tuning via Optuna")
     parser.add_argument("--method", choices=["auxiva", "ilrma", "both"], default="both")
     parser.add_argument("--n-trials", type=int, default=80)
+    parser.add_argument("--wav", choices=["example", "mixture"], default="example")
     args = parser.parse_args()
 
-    print(f"Loading {os.path.relpath(WAV_PATH)} ...")
-    sr, data = load_wav(WAV_PATH)
+    wav_path = _WAV_PATHS[args.wav]
+    print(f"Loading {os.path.relpath(wav_path)} ...")
+    sr, data = load_wav(wav_path)
     print(f"  {data.shape[0]} samples | {data.shape[1]} ch | {sr} Hz | {data.shape[0]/sr:.1f}s")
 
     methods = ["auxiva", "ilrma"] if args.method == "both" else [args.method]
 
     studies = {}
     for method in methods:
-        studies[method] = run_study(method, data, sr, args.n_trials)
+        studies[method] = run_study(method, data, sr, args.n_trials, wav_key=args.wav)
 
     print("\n" + "="*60)
     print("  SUMMARY — best hyperparameters")
