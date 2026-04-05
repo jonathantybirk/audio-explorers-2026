@@ -63,6 +63,8 @@ AUXIVA_VARIANTS = [
         "n_iter": 30,
         "stable_prefix": f"{_pfx}ica",
         "section_note": "default hp",
+        "update_rule": "IP1",
+        "wiener": False,
     },
     {
         "key": "tuned",
@@ -73,6 +75,8 @@ AUXIVA_VARIANTS = [
         "n_iter": 90,
         "stable_prefix": f"{_pfx}ica_tuned",
         "section_note": "hp tuned on example_mixture",
+        "update_rule": "IP1",
+        "wiener": False,
     },
     {
         "key": "mixture_tuned",
@@ -83,10 +87,24 @@ AUXIVA_VARIANTS = [
         "n_iter": 140,
         "stable_prefix": f"{_pfx}ica_mtuned",
         "section_note": "hp tuned directly on mixture.wav (Optuna 80 trials)",
+        "update_rule": "IP1",
+        "wiener": False,
+    },
+    {
+        "key": "wiener_tuned",
+        "label": "Wiener example-tuned",
+        "title": "AuxIVA + Wiener (example-tuned)",
+        "stft_size": 2048,
+        "hop_size": 512,
+        "n_iter": 90,
+        "stable_prefix": f"{_pfx}ica_wiener",
+        "section_note": "example-tuned hp + Wiener post-filter",
+        "update_rule": "IP1",
+        "wiener": True,
     },
 ]
 
-# When running on example, skip default (already done) and only run the two tuned variants
+# When running on example, skip default (already done) and only run the tuned variants
 if WAV_KEY == "example":
     AUXIVA_VARIANTS = [v for v in AUXIVA_VARIANTS if v["key"] != "default"]
 
@@ -174,7 +192,7 @@ def srp_phat_spectrum(channels, sr, azimuths):
 
 
 # ── AuxIVA separation ─────────────────────────────────────────────────────────
-def auxiva_separate(data, stft_size, hop_size, n_iter):
+def auxiva_separate(data, stft_size, hop_size, n_iter, update_rule="IP1"):
     analysis_win = pra.hann(stft_size)
     synthesis_win = pra.transform.stft.compute_synthesis_window(analysis_win, hop_size)
 
@@ -195,7 +213,22 @@ def auxiva_separate(data, stft_size, hop_size, n_iter):
     # Frequency-domain mixing matrices for source-image reconstruction.
     A = np.linalg.inv(W)
 
-    return X, Y, A, mono_sources, synthesis_win
+    return X, Y, A, mono_sources, synthesis_win, gains
+
+
+def apply_wiener_postfilter(Y, gains, synthesis_win, stft_size, hop_size, n_samples, eps=1e-8):
+    """Soft ratio-mask Wiener filter applied after AuxIVA separation.
+
+    For each TF bin, the mask for source k is its share of the total power
+    across all sources. This suppresses bins where other sources dominate.
+    """
+    Y_scaled = Y * gains[None, :, :]                         # (T, F, K) projection-back
+    power = np.abs(Y_scaled) ** 2                            # (T, F, K)
+    total = power.sum(axis=2, keepdims=True) + eps           # (T, F, 1)
+    mask = power / total                                     # (T, F, K) ratio mask
+    Y_wiener = Y_scaled * mask                               # (T, F, K)
+    mono = pra.transform.stft.synthesis(Y_wiener, stft_size, hop_size, win=synthesis_win)
+    return mono[:n_samples].real.astype(np.float64)
 
 
 def reconstruct_source_image_channels(Y, A, source_idx, stft_size, hop_size, synthesis_win, n_samples):
@@ -248,15 +281,22 @@ def run_variant(variant, data, sr, azimuths):
         "Running "
         f'{variant["title"]} '
         f'(4 sources, STFT={variant["stft_size"]}, '
-        f'hop={variant["hop_size"]}, iterations={variant["n_iter"]}) ...'
+        f'hop={variant["hop_size"]}, iterations={variant["n_iter"]}, '
+        f'update_rule={variant.get("update_rule", "IP1")}) ...'
     )
-    X, Y, A, mono_sources, synthesis_win = auxiva_separate(
+    X, Y, A, mono_sources, synthesis_win, gains = auxiva_separate(
         data,
         stft_size=variant["stft_size"],
         hop_size=variant["hop_size"],
         n_iter=variant["n_iter"],
+        update_rule=variant.get("update_rule", "IP1"),
     )
-    mono_sources = mono_sources[: data.shape[0], :].real.astype(np.float64)
+    if variant.get("wiener", False):
+        mono_sources = apply_wiener_postfilter(
+            Y, gains, synthesis_win, variant["stft_size"], variant["hop_size"], data.shape[0]
+        )
+    else:
+        mono_sources = mono_sources[: data.shape[0], :].real.astype(np.float64)
     print(f"  STFT shape: {X.shape[0]} frames × {X.shape[1]} bins × {X.shape[2]} channels")
 
     print("\nSeparation diagnostics:")

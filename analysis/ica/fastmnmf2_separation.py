@@ -23,6 +23,7 @@ is estimated directly from the returned 4-channel source images via SRP-PHAT.
 Outputs saved to analysis/ica/separated/
 """
 
+import argparse
 import glob
 import itertools
 import json
@@ -35,15 +36,17 @@ from scipy.io import wavfile
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-# "example"  → example_mixture.wav  (known speaker positions)
-# "mixture"  → mixture.wav          (unknown positions)
-WAV_KEY = "example"
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--wav", choices=["example", "mixture"], default="example")
+_args = _parser.parse_args()
+WAV_KEY = _args.wav
 
 _WAV_PATHS = {
     "example": os.path.join(REPO_ROOT, "DONT-TOUCH/Software Case/example_mixture.wav"),
     "mixture": os.path.join(REPO_ROOT, "DONT-TOUCH/Software Case/mixture.wav"),
 }
 WAV_PATH = _WAV_PATHS[WAV_KEY]
+_pfx = "" if WAV_KEY == "example" else "mixture_"
 GEO_PATH = os.path.join(REPO_ROOT, "data", "mic_geometry.json")
 OUT_DIR = os.path.join(os.path.dirname(__file__), "separated")
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -63,7 +66,7 @@ VARIANTS = [
         "hop_size": 1024,
         "n_iter": 50,
         "n_components": 8,
-        "prefix": "fmnmf2",
+        "prefix": f"{_pfx}fmnmf2",
     },
     {
         "key": "fmnmf2_tuned",
@@ -72,7 +75,7 @@ VARIANTS = [
         "hop_size": 512,
         "n_iter": 100,
         "n_components": 4,
-        "prefix": "fmnmf2_tuned",
+        "prefix": f"{_pfx}fmnmf2_tuned",
     },
 ]
 

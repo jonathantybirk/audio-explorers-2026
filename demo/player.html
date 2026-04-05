@@ -267,9 +267,12 @@
         { key: "tdica",  header: "Time-domain ICA",secDefault: false },
         { key: "auxiva", header: "AuxIVA",        secDefault: true },
         { key: "auxiva_tuned",  header: "AuxIVA Tuned",          secDefault: false },
-        { key: "auxiva_mtuned", header: "AuxIVA Mixture-Tuned", secDefault: false },
+        { key: "auxiva_mtuned",  header: "AuxIVA Mixture-Tuned",  secDefault: false },
+        { key: "auxiva_wiener", header: "AuxIVA + Wiener",       secDefault: false },
         { key: "ilrma",  header: "ILRMA",         secDefault: true },
         { key: "ilrma_tuned", header: "ILRMA Tuned", secDefault: false },
+        { key: "fmnmf2",      header: "FastMNMF2",              secDefault: false },
+        { key: "fmnmf2_tuned",header: "FastMNMF2 Tuned",        secDefault: false },
         { key: "spatial_em", header: "Spatial EM", secDefault: false },
     ]},
     { id: "dl",       label: "Deep Learning",    colDefault: true, sections: [
@@ -347,6 +350,26 @@
     ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
   ])
     allTracks.push(track(`ex_auxiva_mtuned_${dirKey}`, EX, "auxiva_mtuned", `${dirLabel} — AuxIVA mixture-tuned`, `mixture-tuned hp · est. ${doa}° · n_fft=512 hop=128 iter=140`, "auxiva", `../analysis/ica/separated/ica_mtuned_${dirKey}.wav`));
+
+  // AuxIVA + Wiener post-filter: soft ratio-mask applied after IP1 separation
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","2"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_auxiva_wiener_${dirKey}`, EX, "auxiva_wiener", `${dirLabel} — AuxIVA+Wiener`, `Wiener post-filter · est. ${doa}° · n_fft=2048 hop=512 iter=90`, "auxiva", `../analysis/ica/separated/ica_wiener_${dirKey}.wav`));
+
+  // FastMNMF2 — full-rank spatial covariance model, no demixing matrix
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
+  ])
+    allTracks.push(track(`ex_fmnmf2_${dirKey}`, EX, "fmnmf2", `${dirLabel} — FastMNMF2`, `default hp · est. ${doa}° · iter=50 n_comp=8`, "auxiva", `../analysis/ica/separated/fmnmf2_${dirKey}.wav`));
+
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","2"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","290"]
+  ])
+    allTracks.push(track(`ex_fmnmf2_tuned_${dirKey}`, EX, "fmnmf2_tuned", `${dirLabel} — FastMNMF2 tuned`, `tuned hp · est. ${doa}° · iter=100 n_comp=4`, "auxiva", `../analysis/ica/separated/fmnmf2_tuned_${dirKey}.wav`));
 
   for (const [dirKey, dirLabel, doa] of [
     ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
@@ -428,6 +451,18 @@
   // AuxIVA — mixture-tuned (Optuna 80 trials on mixture.wav: n_fft=512, hop=128, n_iter=140)
   for (const [n, key, lbl] of [[1,"119deg","~119°"],[2,"134deg","~134°"],[3,"312deg","~312°"],[4,"356deg","~356°"]])
     allTracks.push(track(`mix_auxiva_mtuned_${n}`, MIX, "auxiva_mtuned", `Source ${n} ${lbl} — AuxIVA mixture-tuned`, `mixture-tuned hp · est. ${lbl} · n_fft=512 hop=128 iter=140`, "auxiva", `../analysis/ica/separated/mixture_ica_mtuned_source_${n}_${key}.wav`));
+
+  // AuxIVA + Wiener on mixture
+  for (const [n, key, lbl] of [[1,"134deg","~134°"],[2,"178deg","~178°"],[3,"313deg","~313°"],[4,"356deg","~356°"]])
+    allTracks.push(track(`mix_auxiva_wiener_${n}`, MIX, "auxiva_wiener", `Source ${n} ${lbl} — AuxIVA+Wiener`, `Wiener post-filter · est. ${lbl} · n_fft=2048 hop=512 iter=90`, "auxiva", `../analysis/ica/separated/mixture_ica_wiener_source_${n}_${key}.wav`));
+
+  // FastMNMF2 on mixture — default collapsed ~135° source into ~90° (cross-corr 0.54)
+  for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"180deg","~180°"],[3,"313deg","~313°"],[4,"356deg","~356°"]])
+    allTracks.push(track(`mix_fmnmf2_${n}`, MIX, "fmnmf2", `Source ${n} ${lbl} — FastMNMF2`, `default hp · est. ${lbl} · iter=50 n_comp=8`, "auxiva", `../analysis/ica/separated/mixture_fmnmf2_source_${n}_${key}.wav`));
+
+  // FastMNMF2 tuned on mixture — all 4 sources separated (cross-corr 0.26)
+  for (const [n, key, lbl] of [[1,"134deg","~134°"],[2,"178deg","~178°"],[3,"313deg","~313°"],[4,"356deg","~356°"]])
+    allTracks.push(track(`mix_fmnmf2_tuned_${n}`, MIX, "fmnmf2_tuned", `Source ${n} ${lbl} — FastMNMF2 tuned`, `tuned hp · est. ${lbl} · iter=100 n_comp=4`, "auxiva", `../analysis/ica/separated/mixture_fmnmf2_tuned_source_${n}_${key}.wav`));
 
   for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
     allTracks.push(track(`mix_ilrma_tuned_${n}`, MIX, "ilrma_tuned", `Source ${n} ${lbl} — ILRMA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=110 · NMF_k=2`, "ilrma", `${MA}/ilrma_tuned_source_${n}_${key}.wav`));
