@@ -1,7 +1,7 @@
 #!/bin/sh
 ### -- LSF job script for TF-GridNet 4-source training on DTU HPC --
 ### -- specify queue -- try A100 first; switch to gpuv100 if queue is long
-#BSUB -q gpuh100
+#BSUB -q gpua100
 ### -- set the job Name --
 #BSUB -J tfgridnet4
 ### -- ask for number of cores --
@@ -11,7 +11,7 @@
 ### -- set walltime limit: hh:mm -- max 24h on GPU queues --
 #BSUB -W 24:00
 ### -- request system memory --
-#BSUB -R "rusage[mem=32GB]"
+#BSUB -R "rusage[mem=32GB] span[hosts=1]"
 ### -- send notification at start --
 #BSUB -B
 ### -- send notification at completion --
@@ -20,7 +20,11 @@
 #BSUB -o analysis/dl_separation/logs/tfgridnet4_%J.out
 #BSUB -e analysis/dl_separation/logs/tfgridnet4_%J.err
 
-cd /zhome/53/3/169791/audio-explorers-2026
+if [ -n "$LS_SUBCWD" ]; then
+  cd "$LS_SUBCWD" || exit 1
+fi
+
+mkdir -p analysis/dl_separation/logs
 
 module load python3/3.12.11
 module load cuda/12.6
