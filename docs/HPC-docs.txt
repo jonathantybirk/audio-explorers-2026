@@ -1,0 +1,569 @@
+This guide is meant for a direct and easy access to the DTU HPC to run Python (XYZ) scripts on Windows. For the Official Homepage for HPC support visit:
+https://www.hpc.dtu.dk/?page_id=3226
+(In my experience, Google is better at answering your questions about the HPC at DTU than searching around on the support page) 
+
+There are two main ways of accessing the cluster, through a graphical user interface and the terminal on your PC. Using the graphical user interface is only an advantage if you want to use the HPC for smaller scripts and editing them, because you’ll be using a terminal within it in order to submit scripts to the truly powerful GPUs. Skip to the SSH section if you intend to use the HPC through the terminal after looking at the File transfer section
+
+Initial Set-up	2
+File transfer	2
+Github	4
+SSH	5
+WSL (Windows Subsystem for Linux)	5
+Running Scripts	6
+Python	6
+Set-up	6
+Do not load scipy as a way to save space, it may cause package conflicts….	9
+Run	10
+(GPU, Pytorch)	10
+Run Jupyter Notebook	12
+Port Forwarding	12
+Clean up	12
+Manage storage	12
+R	13
+Installing packages	13
+Matlab	14
+
+
+Initial Set-up
+Make sure to be connected to wifi at DTU or the DTU vpn:
+https://www.hpc.dtu.dk/?page_id=5685
+VScode (Recommended)
+To set up a remote connection click the blue button in the bottom left 
+
+This will open the following:
+
+Click connect to host and “Add host”, you will then see the following:
+
+Here you input sXXXXXX@login1.gbar.dtu.dk (with you numbers) and get:
+
+Now click connect, or click the blue button in the bottom left again to connect. After clicking “Connect to host” you should see the host as an option:
+
+Click it and configure it. The platform is Linux and after inputting that you’ll be asked to provide your password. This is your DTU password. Upon a successful login you’ll see the following screen:
+
+You can now use the hpc directly through your VScode editor, writing code and executing it!
+Continue to the section about running python scripts or cloning github repos to get started:)
+
+File transfer
+To run a script on the High performance chips available, we first need to upload the script. This can either be done through github, by setting up authentication or through SCP (which is necessary when uploading larger files). 
+For a GUI for transferring files on windows go to:
+https://winscp.net/eng/download.php
+And press the green Download button:
+
+Now run the setup.exe file from the download and follow the instructions. Upon opening WinSCP after download, you will be faced with the following log in page:
+
+Use host name ‘transfer.gbar.dtu.dk’ and dtu credentials to start a session.
+Upon a successful login, you should see a screen like the following:
+ 
+The folders on the left are from your PC and those on the right are your workspace on the DTU HPC, the exact same as found on ThinLinc. By navigating to a file/folder on your PC, you can upload it by right-clicking and choosing upload/upload in background:
+
+I recommend ‘upload in background’, as default upload prevents you from doing anything else in the app until the upload is finished. 
+Once you have uploaded a file, it will appear in Thinlinc as soon as you reload the folder in which it was uploaded (Using the button in the top right of the file manager):
+
+
+Github
+One can clone github repositories into one’s storage by copying the ssh command found here:
+
+The full command then becomes:
+git clone git@github.com:FabianScott/ComSoc.git														
+You may have to set up authentication, this process should be manageable through google searching:
+https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+Use chaptgpt as well!!
+SSH
+WSL (Windows Subsystem for Linux)
+If you do not already have WSL set up, use the following link:
+	https://learn.microsoft.com/en-us/windows/wsl/install
+
+For those using a unix (MAC or Linux) system, you can probably get it working by skipping 1 and 2 as these steps are windows specific.
+
+Open a terminal (with PowerShell) as an Administrator and install an shh client, for instance using:
+Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+If login in on a network outside of DTU, set up the VPN using this link:
+https://www.hpc.dtu.dk/?page_id=4317
+To log into the HPC cluster use the command, where ‘userid’ is your DTU username:
+ssh userid@login1.gbar.dtu.dk
+Next type in your password and you should see something similar to the following in your input field:
+
+Now you are in the terminal, where you can use the commands found in the following sections of this guide.
+
+
+Running Scripts
+Pythoncd PC
+The following uses the terminal in ThinLinc, however the same commands work when you have used SSH to access the HPC.
+Set-up
+For Python, it is recommended you use a virtual environment to run scripts in. To set up a virtual environment. The following happens in the terminal, either in Thinlinc or the one you used ssh in.
+First thing to do is place yourself in the folder containing the files you’re working with:
+
+Load the python version you are working with 
+(note that the following screenshot also shows the necessity of specifying ‘python3’ instead of just ‘python’ and how to unload a module in the terminal):
+
+
+After loading python3, specify the name of the virtual environment you want to create and activate it using the following commands. Notice how the ‘~’ between lines has now got the virtual environment name next to it. To deactivate the virtual environment, simply type ‘deactivate’:
+
+Tip: by pressing the upwards facing arrow key, you can go backwards through the commands you have written. Here I use it to reactivate the environment to continue the guide.
+
+With the environment active, you can install Python packages using the command 
+‘python -m pip install packagename’:
+
+
+And the same command structure to uninstall, there is a prompt which will ask you to type ‘y’ to confirm:
+
+
+In many projects, there will be a requirements.txt file. To install via this file do ‘python3 -m pip install -r requirements.txt’ This requires you to be in the same folder as the file:
+
+
+
+Do not load scipy as a way to save space, it may cause package conflicts….
+Run
+Using the ‘cd’ command, place yourself in the directory where the script is located. Now you can use the command ‘python filename.py’ to run the script directly in the terminal:
+
+
+Now it is time to make the .sh script which will execute the code on the HPC. The basic structure looks like this is found in the ‘submit.sh’ file in the folder this document is int. Here the default queue is used
+ 
+(GPU, Pytorch)
+For an overview of the GPUs available see: 
+https://www.hpc.dtu.dk/?page_id=2759
+If using pytorch install and load the appropriate modules by using the command found on this page:
+https://pytorch.org/get-started/locally/
+Remember that the HPC uses Linux. The provided python file and requirements file should get a neural network to work and train on a GPU.
+
+
+Once you have the .sh and .py in the same directory as you have placed yourself in in the terminal, use the command 
+bsub < sh_filename.sh. 
+The code will now run and all outputs (mostly print statements) will appear in the output file, all error messages will appear in the error file. To check the status of you jobs use ‘bstat’:
+
+
+To stop a job that is running, use ‘bkill jobid’. Notice that the jobid is found in the output from ‘bstat’. To keep an overview over different jobs, give them different, but short names, as the terminal can only display a limited number of characters. 
+
+
+The script is run in the same folder, so it is possible to read data and write data to files in the same way as normal. I recommend testing by running the script directly in the terminal, since if it works there it will (likely) work on the cluster as well.
+
+Notes:
+If running a script, which is within a package and uses relative imports, from the root use:
+python3 -m src.subfolder.scriptname
+
+
+
+Run Jupyter Notebook
+Install jupyter and notebook
+python3 -m pip install jupyter
+python3 -m pip install notebook
+Then run the notebook with:
+
+jupyter nbconvert –execute notebook_name to notebook
+
+This creates a copy of the notebook where it has tried to run all cells, notice that you should not specify the file format of ‘.ipynb’.
+Module load matplotlib/3.5.1-numpy-1.22.2-python-3.9.11
+
+Port Forwarding
+Open two terminals
+
+In terminal 1:
+ssh to log in
+Open an interactive node such as sxm2sh
+Activate a venv ensuring is has jupyter installed
+Run echo $HOSTNAME
+This will be used in terminal 2 as HOSTNAME
+Run jupyter notebook --no-browser --port=7070 --ip=$HOSTNAME
+If the terminal outputs that the port is in use and it’s using a different one say 8888, change it and in the command for terminal 2 change both port names to that same port. So: “8888:HOSTNAME:8888”
+In terminal 2 or using the VSCode connect button in the bottom left:
+Run ssh fasco@login1.gbar.dtu.dk -g -L 7070:HOSTNAME:7070 -N
+In a local browser
+Copy the link from terminal one: http://127.0.0.1:8080/tree?token=5b454f0d943ddc083c2894427b1bb9c5e95122c5058d3a69
+If prompted to login, create a new login by using the token from the link and create your own password.
+Clean up
+Use the following command to remove the pip cache and save space:
+rm -rvf ~/.cache/pip/http/*
+To list the amount of data used by files in the current folder use “du -sh *”
+Manage storage
+getquota_zhome.sh
+R
+Installing packages
+First step is to find the tar.gz files for the packages you wish to install. They will most likely end up in your downloads folder. With this file, load R using ‘module load R’ or specify the version you want from the list of available ones using ‘module avail R’. 
+Once loaded, use the following command to install the package into the directory of you choice:
+R CMD INSTALL -l PATH/TO/DESTINATION /zhome/de/d/PATH/TO/DOWNLOADS
+The dependencies of R packages may require some time to ensure that the package you want is actually installed.
+
+
+To test whether your script will run on the HPC, load the version of R you are currently using ‘module load R/a.b.c-mkl-yyyyupdatec’, place yourself in the correct folder and use the command ‘R CMD BATCH script_name.R’ to run the script:
+
+
+This will create a file called ‘script_name.Rout’ with the output along with a file called ‘Rplots.pdf’. These contain the output and the plots respectively. To run the same script on the HPC, use a similar script to that for Python, simply replacing the final commands with those for running R scripts in the terminal:
+
+#!/bin/sh 
+### General options 
+### -- specify queue -- 
+#BSUB -q hpc
+### -- set the job Name -- 
+#BSUB -J Job_Name
+### -- ask for 1 core -- 
+#BSUB -n 1 
+### -- specify that we need 2GB of memory per core/slot -- 
+#BSUB -R "rusage[mem=2GB]"
+### -- specify that we want the job to get killed if it exceeds 3 GB per core/slot -- 
+#BSUB -M 3GB
+### -- set walltime limit: hh:mm -- 
+#BSUB -W 24:00 
+### -- set the email address -- 
+# please uncomment the following line and put in your e-mail address,
+# if you want to receive e-mail notifications on a non-default address
+##BSUB -u your_email_address
+### -- send notification at start -- 
+#BSUB -B 
+### -- send notification at completion -- 
+#BSUB -N 
+### -- Specify the output and error file. %J is the job-id -- 
+### -- -o and -e mean append, -oo and -eo mean overwrite -- 
+#BSUB -o Output_%J.out 
+#BSUB -e Output_%J.err
+
+module load R/4.2.2-mkl2022update2 
+R CMD BATCH My_serial_script.R
+This will run the script in the same way as in the terminal, creating the same output files.
+Matlab
+With matlab, you have to manually save all the plots you wish to produce along with the data as it does not do this automatically.
+To run a script, the command is ‘matlab -nodisplay -batch script_name’. 
+NOTE: Do not include the .m at the end of the filename. 
+Test if you can run it directly from the terminal:
+
+If it works, simply put this line into the .sh script and ‘bsub’ it in the same manner as the other languages:
+#!/bin/sh 
+### General options 
+### -- specify queue -- 
+#BSUB -q hpc
+### -- set the job Name -- 
+#BSUB -J Job_Name
+### -- ask for 1 core -- 
+#BSUB -n 1 
+### -- specify that we need 2GB of memory per core/slot -- 
+#BSUB -R "rusage[mem=2GB]"
+### -- specify that we want the job to get killed if it exceeds 3 GB per core/slot -- 
+#BSUB -M 3GB
+### -- set walltime limit: hh:mm -- 
+#BSUB -W 24:00 
+### -- set the email address -- 
+# please uncomment the following line and put in your e-mail address,
+# if you want to receive e-mail notifications on a non-default address
+##BSUB -u your_email_address
+### -- send notification at start -- 
+#BSUB -B 
+### -- send notification at completion -- 
+#BSUB -N 
+### -- Specify the output and error file. %J is the job-id -- 
+### -- -o and -e mean append, -oo and -eo mean overwrite -- 
+#BSUB -o Output_%J.out 
+#BSUB -e Output_%J.err
+
+Matlab -nodisplay -batch script_name
+
+Skip to content
+Back Home
+HPC News
+HPC Support 
+HPC Services 
+HPC Competence Center 
+HPC Cluster Hosting
+About DCC 
+Home » HPC LSF clusters » LSF User Guides » LSF Job Templates » Using GPUs under LSF10
+Using GPUs under LSF10
+
+We have right now 38 nodes with GPUs in our generally available LSF10-setup.
+The walltime is limited to 24 hours per job at the moment.
+
+6 nodes with 2 x Nvidia L40s PCIE 48GB – queuename: gpul40s
+4 nodes with 2 x Tesla A100 PCIE 40 GB (owned by DTU Compute) – queuename: gpua100
+6 nodes with 2 x Tesla A100 PCIE 80 GB (owned by DTU Compute) – queuename: gpua100
+6 nodes with 2 x Tesla V100 16 GB (owned by DTU Compute&DTU Elektro) – queuename: gpuv100
+8 nodes with 2 x Tesla V100 32 GB (owned by DTU Compute&DTU Environment&DTU MEK) – queuename gpuv100
+1 nodes with 2 x Tesla A10 PCIE 24 GB (owned by DTU Compute) – queuename gpua10
+1 nodes with 2 x Tesla A40 48 GB with NVlink (owned by DTU Compute) – queuename gpua40
+3 nodes with 4 x Tesla V100 32 GB with NVlink (owned by DTU Compute) – queuename gpuv100
+2 nodes with 4 x TitanX (Pascal) – queuename: gputitanxpascal (retired)
+1 node with 4 x Tesla K80 – queuename: gpuk80 (retired)
+1 node with 2 x Tesla K40 – queuename: gpuk40 (retired)
+
+1 node with 2 x AMD Radeon Instinct MI50 16 GB gpus – not on queue
+1 node with 2 x AMD Radeon Instinct MI25 16 GB gpus – queuename gpuamd
+
+For being able to run code on the Nvidia A100 please make sure to compile your code with
+cuda 11.0 or newer.
+
+1 interactive V100-node reachable via voltash
+1 interactive V100-node with NVlink reachable via sxm2sh
+1 interactive A100-node with NVlink reachable via a100sh.
+
+Here is an example jobscript:
+
+#!/bin/sh
+### General options
+### –- specify queue --
+#BSUB -q gpuv100
+### -- set the job Name --
+#BSUB -J testjob
+### -- ask for number of cores (default: 1) --
+#BSUB -n 4
+### -- Select the resources: 1 gpu in exclusive process mode --
+#BSUB -gpu "num=1:mode=exclusive_process"
+### -- set walltime limit: hh:mm --  maximum 24 hours for GPU-queues right now
+#BSUB -W 1:00
+# request 5GB of system-memory
+#BSUB -R "rusage[mem=5GB]"
+### -- set the email address --
+# please uncomment the following line and put in your e-mail address,
+# if you want to receive e-mail notifications on a non-default address
+##BSUB -u your_email_address
+### -- send notification at start --
+#BSUB -B
+### -- send notification at completion--
+#BSUB -N
+### -- Specify the output and error file. %J is the job-id --
+### -- -o and -e mean append, -oo and -eo mean overwrite --
+#BSUB -o gpu_%J.out
+#BSUB -e gpu_%J.err
+# -- end of LSF options --
+
+nvidia-smi
+# Load the cuda module
+module load cuda/11.6
+
+/appl/cuda/11.6.0/samples/bin/x86_64/linux/release/deviceQuery
+
+Then submit with
+
+bsub < jobscript.sh
+For requesting a GPU with 32GB (only available in the gpuv100 queue) of memory, then please add a
+
+#BSUB -R "select[gpu32gb]"
+to your jobscript. In the gpua100-queue we have GPUs with 40GB and with 80 GB of memory.
+
+For requesting GPUs with NVLINK (only available in the gpuv100-queue), then please add a
+
+#BSUB -R "select[sxm2]"
+to your jobscript.
+
+For requesting more GPUs, please modify the jobscript accordingly, i.e., for two GPUs use
+
+#BSUB -n 8
+#BSUB -gpu "num=2:mode=exclusive_process" 
+
+Contact Us
+E-mail: support@cc.dtu.dk
+DTU Compute
+Building 324, Room 280
+Technical University of Denmark
+2800 Kgs Lyngby
+Denmark
+Recent Posts
+ Mondays with MATLAB – Nordic HPC Workshops – May & September 2025
+ Cluster operating system update: 23/08 – 26/08/2024
+ VS Code Remote not working after the update
+ New software stack (2023-aug)
+ New requirements to access G-bar/HPC from outside DTU
+Search
+Search for:
+ 
+· © 2026  · Powered by  · Designed with the Customizr theme ·
+
+
+Skip to main content
+Register for PyTorch Conference Europe 2026, April 7–8, Paris
+PyTorch Logo
+Learn
+Get Started
+Tutorials
+Learn the Basics
+PyTorch Recipes
+Intro to PyTorch – YouTube Series
+Webinars
+Community
+Landscape
+Join the Ecosystem
+Community Hub
+Forums
+Developer Resources
+Events
+Meeting Calendar
+PyTorch Contributor Awards
+PyTorch Ambassadors
+Projects
+PyTorch
+vLLM
+DeepSpeed
+Ray
+Host Your Project
+Docs
+PyTorch
+Domains
+Blog & News
+Blog
+Announcements
+Case Studies
+Newsletter
+About
+PyTorch Foundation
+Members
+Governing Board
+Technical Advisory Council
+Cloud Credit Program
+Staff
+Contact
+Brand Guidelines
+JOIN
+search
+Get Started
+Select preferences and run the command to install PyTorch locally, or get started quickly with one of the supported cloud platforms.
+
+Start Locally
+PyTorch 2.x
+Start via Cloud Partners
+Previous PyTorch Versions
+PyTorch for Edge
+Shortcuts
+
+Prerequisites
+Supported Linux Distributions
+Python
+Package Manager
+Installation
+pip
+Verification
+Building from source
+Prerequisites
+Start Locally
+Select your preferences and run the install command. Stable represents the most currently tested and supported version of PyTorch. This should be suitable for many users. Preview is available if you want the latest, not fully tested and supported, builds that are generated nightly. Please ensure that you have met the prerequisites below (e.g., numpy), depending on your package manager. You can also install previous versions of PyTorch. Note that LibTorch is only available for C++.
+
+NOTE: Latest Stable PyTorch requires Python 3.10 or later.
+
+PyTorch Build
+Your OS
+Package
+Language
+Compute Platform
+Run this Command:
+Stable (2.11.0)
+Preview (Nightly)
+Linux
+Mac
+Windows
+Pip
+LibTorch
+Source
+Python
+C++ / Java
+CUDA 12.6
+CUDA 12.8
+CUDA 13.0
+ROCm 7.2
+CPU
+pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+
+Installing on Linux
+PyTorch can be installed and used on various Linux distributions. Depending on your system and compute requirements, your experience with PyTorch on Linux may vary in terms of processing time. It is recommended, but not required, that your Linux system has an NVIDIA or AMD GPU in order to harness the full power of PyTorch’s CUDA support or ROCm support.
+
+Prerequisites
+Supported Linux Distributions
+PyTorch is supported on Linux distributions that use glibc >= v2.28, which include the following:
+
+Arch Linux, minimum version 2020.01.22
+CentOS, minimum version 8
+Debian, minimum version 10.0
+Fedora, minimum version 24
+Mint, minimum version 20
+OpenSUSE, minimum version 15
+PCLinuxOS, minimum version 2014.7
+Slackware, minimum version 14.2
+Ubuntu, minimum version 20.04 (please note that 20.04 reached EOL)
+The install instructions here will generally apply to all supported Linux distributions. An example difference is that your distribution may support yum instead of apt. The specific examples shown were run on an Ubuntu 18.04 machine.
+
+Python
+Python 3.10-3.14 is generally installed by default on any of our supported Linux distributions, which meets our recommendation.
+
+Tip: By default, you will have to use the command python3 to run Python. If you want to use just the command python, instead of python3, you can symlink python to the python3 binary.
+
+However, if you want to install another version, there are multiple ways:
+
+APT
+Python website
+If you decide to use APT, you can run the following command to install it:
+
+sudo apt install python
+Package Manager
+To install the PyTorch binaries, you will need to use the supported package manager: pip.
+
+pip
+Python 3
+
+While Python 3.x is installed by default on Linux, pip is not installed by default.
+
+sudo apt install python3-pip
+Tip: If you want to use just the command pip, instead of pip3, you can symlink pip to the pip3 binary.
+
+Installation
+pip
+No CUDA
+To install PyTorch via pip, and do not have a CUDA-capable or ROCm-capable system or do not require CUDA/ROCm (i.e. GPU support), in the above selector, choose OS: Linux, Package: Pip, Language: Python and Compute Platform: CPU. Then, run the command that is presented to you.
+
+With CUDA
+To install PyTorch via pip, and do have a CUDA-capable system, in the above selector, choose OS: Linux, Package: Pip, Language: Python and the CUDA version suited to your machine. Often, the latest CUDA version is better. Then, run the command that is presented to you.
+
+With ROCm
+To install PyTorch via pip, and do have a ROCm-capable system, in the above selector, choose OS: Linux, Package: Pip, Language: Python and the ROCm version supported. Then, run the command that is presented to you.
+
+Verification
+To ensure that PyTorch was installed correctly, we can verify the installation by running sample PyTorch code. Here we will construct a randomly initialized tensor.
+
+import torch
+x = torch.rand(5, 3)
+print(x)
+The output should be something similar to:
+
+tensor([[0.3380, 0.3845, 0.3217],
+        [0.8337, 0.9050, 0.2650],
+        [0.2979, 0.7141, 0.9069],
+        [0.1449, 0.1132, 0.1375],
+        [0.4675, 0.3947, 0.1426]])
+Additionally, to check if your GPU driver and CUDA/ROCm is enabled and accessible by PyTorch, run the following commands to return whether or not the GPU driver is enabled (the ROCm build of PyTorch uses the same semantics at the python API level link, so the below commands should also work for ROCm):
+
+import torch
+torch.cuda.is_available()
+Building from source
+For the majority of PyTorch users, installing from a pre-built binary via a package manager will provide the best experience. However, there are times when you may want to install the bleeding edge PyTorch code, whether for testing or actual development on the PyTorch core. To install the latest PyTorch code, you will need to build PyTorch from source.
+
+Prerequisites
+Install Pip
+If you need to build PyTorch with GPU support a. for NVIDIA GPUs, install CUDA, if your machine has a CUDA-enabled GPU. b. for AMD GPUs, install ROCm, if your machine has a ROCm-enabled GPU
+Follow the steps described here: https://github.com/pytorch/pytorch#from-source
+You can verify the installation as described above.
+
+Docs
+Access comprehensive developer documentation for PyTorch
+
+View Docs ›
+
+Tutorials
+Get in-depth tutorials for beginners and advanced developers
+
+View Tutorials ›
+
+Resources
+Find development resources and get your questions answered
+
+View Resources ›
+
+Stay in touch for updates, event info, and the latest news
+First Name*
+Last Name*
+Email*
+
+Select Country*
+By submitting this form, I consent to receive marketing emails from the LF and its projects regarding their events, training, research, developments, and related announcements. I understand that I can unsubscribe at any time using the links in the footers of the emails I receive. Privacy Policy.
+
+x-twitter
+facebook
+linkedin
+youtube
+github
+slack
+discord
+© 2026 PyTorch. Copyright © The Linux Foundation®. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For more information, including terms of use, privacy policy, and trademark usage, please see our Policies page. Trademark Usage. Privacy Policy.
+
+Menu
