@@ -286,9 +286,13 @@ def train(args):
     print(f"LoRA:        r={args.lora_r}, alpha={args.lora_alpha}")
 
     print(f"\nLoading {args.base_model} ...")
+    pretrained_dir = os.environ.get(
+        "PRETRAINED_DIR",
+        f"./pretrained_{args.base_model.replace('/', '_')}",
+    )
     model_sb = SepformerSeparation.from_hparams(
         source=args.base_model,
-        savedir=f"./pretrained_{args.base_model.replace('/', '_')}",
+        savedir=pretrained_dir,
         run_opts={"device": str(device)},
     )
 
