@@ -29,10 +29,11 @@ mkdir -p analysis/dl_separation/logs
 module load python3/3.12.11
 module load cuda/12.6
 
-if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
+VENV=.venv
+if [ ! -d "$VENV" ]; then
+    python3 -m venv "$VENV"
 fi
-source .venv/bin/activate
+source "$VENV/bin/activate"
 
 if ! python3 -c "import torch" 2>/dev/null; then
     echo "First run — installing dependencies..."
