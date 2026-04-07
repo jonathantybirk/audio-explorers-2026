@@ -29,16 +29,10 @@ mkdir -p analysis/dl_separation/logs
 module load python3/3.12.11
 module load cuda/12.6
 
-# Keep venv and pip cache on /work3 — PyTorch CUDA wheel is ~2.5 GB and
-# would fill the 30 GB zhome quota immediately.
-VENV=/work3/s216136/venv
-export PIP_CACHE_DIR=/work3/s216136/.pip-cache
-mkdir -p "$PIP_CACHE_DIR"
-
-if [ ! -d "$VENV" ]; then
-    python3 -m venv "$VENV"
+if [ ! -d ".venv" ]; then
+    python3 -m venv .venv
 fi
-source "$VENV/bin/activate"
+source .venv/bin/activate
 
 if ! python3 -c "import torch" 2>/dev/null; then
     echo "First run — installing dependencies..."
@@ -58,8 +52,6 @@ if ! python3 -c "import peft" 2>/dev/null; then
     echo "Installing peft for LoRA..."
     pip install --quiet peft
 fi
-
-export PRETRAINED_DIR=/work3/s216136/pretrained_models
 
 nvidia-smi
 
