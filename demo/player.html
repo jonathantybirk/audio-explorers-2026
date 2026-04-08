@@ -227,6 +227,7 @@
           <span><span class="dot" style="background:#5b21b6"></span> SepFormer Libri3Mix</span>
           <span><span class="dot" style="background:#9d174d"></span> ConvTasNet</span>
           <span><span class="dot" style="background:#86198f"></span> DPRNN</span>
+          <span><span class="dot" style="background:#0e7490"></span> SepFormer 4-src</span>
         </div>
         <div class="polar-wrap">
           <h3 id="polar-title"></h3>
@@ -280,6 +281,7 @@
         { key: "sflibri",  header: "SepFormer Libri3Mix", secDefault: false },
         { key: "ctlibri",  header: "ConvTasNet LibriMix", secDefault: false },
         { key: "dprnn",    header: "DPRNN WHAM!",         secDefault: false },
+        { key: "sf4mix",   header: "SepFormer Libri4Mix ★", secDefault: true },
     ]},
   ];
 
@@ -472,6 +474,13 @@
       `${lbl} — DUET`, `est. ${lbl} · no front found`,
       "duet", `../analysis/duet/separated/duet_mixture_source_${n}_${az}deg.wav`));
 
+  // SepFormer Libri4Mix — only public pretrained 4-source model
+  for (let i = 1; i <= 4; i++)
+    allTracks.push(track(`ex_sf4mix_${i}`, EX, "sf4mix",
+      `Source ${i} — SepFormer Libri4Mix`,
+      `4-src · 48 kHz · hahmadraz/sepformer-libri4mix`,
+      "sf4mix", `${DL}/example_sepformer4_libri4mix_src${i}.wav`));
+
   // ── MIXTURE — Deep Learning ───────────────────────────────────────────────────
   // SepFormer WHAMR — MOS 2.61, cross-corr 0.235 (vs 0.099 on example — harder scene)
   for (let i = 1; i <= 2; i++)
@@ -497,6 +506,12 @@
       `Source ${i} — DPRNN WHAM!`,
       `2-src · some reverb`,
       "dprnn", `${DL}/mixture_dprnn_wham_clean_src${i}.wav`));
+
+  for (let i = 1; i <= 4; i++)
+    allTracks.push(track(`mix_sf4mix_${i}`, MIX, "sf4mix",
+      `Source ${i} — SepFormer Libri4Mix`,
+      `4-src · 48 kHz · hahmadraz/sepformer-libri4mix`,
+      "sf4mix", `${DL}/mixture_sepformer4_libri4mix_src${i}.wav`));
 
   // ── Per-recording metadata ──────────────────────────────────────────────────
   const RECORDING_META = {

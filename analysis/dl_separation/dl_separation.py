@@ -67,6 +67,18 @@ torch.load = _patched_torch_load
 from asteroid.models import ConvTasNet, DPRNNTasNet
 from speechbrain.inference.separation import SepformerSeparation
 
+# hahmadraz/sepformer-libri4mix was trained with an older SpeechBrain that had
+# speechbrain.lobes.augment.TimeDomainSpecAugment. The module doesn't exist in
+# SpeechBrain 1.x — inject a stub so hyperpyyaml can resolve the class at load time.
+import types as _types, sys as _sys
+if "speechbrain.lobes.augment" not in _sys.modules:
+    _aug_mod = _types.ModuleType("speechbrain.lobes.augment")
+    class _TimeDomainSpecAugment(torch.nn.Module):
+        def __init__(self, **kwargs): super().__init__()
+        def forward(self, x, *args, **kwargs): return x
+    _aug_mod.TimeDomainSpecAugment = _TimeDomainSpecAugment
+    _sys.modules["speechbrain.lobes.augment"] = _aug_mod
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT_DIR   = os.path.join(os.path.dirname(__file__), "separated")
@@ -104,6 +116,14 @@ MODEL_REGISTRY = {
         "tag": "mpariente/DPRNNTasNet_WHAM!_sepclean",
         "n_src": 2, "sr": 8000,
         "note": "DPRNN · 2 src · 8 kHz · WHAM! (some reverb)",
+    },
+    # ── SpeechBrain / SepFormer 4-source ─────────────────────────────────────
+    "sepformer4_libri4mix": {
+        "loader": "speechbrain",
+        "source": "hahmadraz/sepformer-libri4mix",
+        "savedir": "/tmp/sepformer4-libri4mix",
+        "n_src": 4, "sr": 48000,
+        "note": "SepFormer · 4 src · 48 kHz · Libri4Mix  ← only public 4-src model",
     },
     # ── SpeechBrain / SepFormer ───────────────────────────────────────────────
     "sepformer_whamr": {
@@ -178,18 +198,23 @@ def load_model(model_key):
         return model, "speechbrain"
 
 
-def run_model(model_key, mono_8k):
-    """mono_8k: 1-D float32 numpy array already at 8 kHz, normalised."""
+def run_model(model_key, mono_native, native_sr):
+    """Resample to the model's expected SR, normalise, then separate."""
+    cfg = MODEL_REGISTRY[model_key]
+    model_sr = cfg["sr"]
+    mono = resample(mono_native, native_sr, model_sr).astype(np.float32)
+    peak = np.max(np.abs(mono)) + 1e-12
+    mono /= peak
     model, kind = load_model(model_key)
 
     if kind == "asteroid":
-        x   = torch.from_numpy(mono_8k).unsqueeze(0)   # (1, T)
+        x   = torch.from_numpy(mono).unsqueeze(0)      # (1, T)
         with torch.no_grad():
             out = model(x)                              # (1, n_src, T)
         sources = out.squeeze(0).cpu().numpy()          # (n_src, T)
 
     else:  # speechbrain
-        x   = torch.from_numpy(mono_8k).unsqueeze(0)   # (1, T)
+        x   = torch.from_numpy(mono).unsqueeze(0)      # (1, T)
         with torch.no_grad():
             out = model.separate_batch(x)               # (1, T, n_src)
         sources = out.squeeze(0).T.cpu().numpy()        # (n_src, T)
@@ -204,28 +229,26 @@ def run(wav_key="example"):
     sr, data = load_wav(wav_path)
     print(f"  {data.shape[0]} samples | {data.shape[1]} ch | {sr} Hz | {data.shape[0]/sr:.1f}s")
 
-    # Prepare 8 kHz mono (channel 0 = LF) for all models
-    mono_native = data[:, 0]
-    mono_8k = resample(mono_native, sr, 8000).astype(np.float32)
-    peak = np.max(np.abs(mono_8k)) + 1e-12
-    mono_8k /= peak
+    # Mono channel 0 (LF) at native SR — each model resamples to its own SR
+    mono_native = data[:, 0].astype(np.float32)
 
     print("\n" + "="*72)
-    print("  NOTE: all models below are out-of-distribution for our 4-speaker task.")
-    print("  Trained on 2–3 speakers; we have 4. Results show DL baseline capability.")
+    print("  NOTE: most models below are out-of-distribution for our 4-speaker task.")
+    print("  sepformer4_libri4mix is the only model trained on 4 sources.")
     print("="*72)
 
     results = {}
     for model_key, cfg in MODEL_REGISTRY.items():
         print(f"\n  [{model_key}]  {cfg['note']}")
         try:
-            sources = run_model(model_key, mono_8k)
-            mos_scores = [score_source(sources[k], 8000) for k in range(sources.shape[0])]
+            sources = run_model(model_key, mono_native, sr)
+            model_sr = MODEL_REGISTRY[model_key]["sr"]
+            mos_scores = [score_source(sources[k], model_sr) for k in range(sources.shape[0])]
             corr = cross_corr_score(sources)
 
             for k, sig in enumerate(sources):
                 out_path = os.path.join(OUT_DIR, f"{wav_key}_{model_key}_src{k+1}.wav")
-                save_wav(out_path, sig, 8000)
+                save_wav(out_path, sig, model_sr)
 
             results[model_key] = {"mos_scores": mos_scores, "corr": corr}
             print(f"    DNSMOS ovrl_mos: {[f'{m:.3f}' for m in mos_scores]}  "
