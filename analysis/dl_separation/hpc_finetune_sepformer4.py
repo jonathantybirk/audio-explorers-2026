@@ -172,20 +172,30 @@ def extend_output_to_n_src(model: nn.Module, n_src_new: int) -> nn.Module:
             print(f"  Extended masknet.output_layer → {n_src_new} sources")
             return model
 
-    # Fallback: find last Conv1d/Linear with small out dim (the source head)
+    # Fallback: find the last Conv1d/Linear whose out_dim == base n_src
+    # (more reliable than a hard-coded < 16 threshold)
+    base_n_src = None
+    for name, mod in masknet.named_modules():
+        if isinstance(mod, (nn.Conv1d, nn.Linear)):
+            out = mod.out_channels if isinstance(mod, nn.Conv1d) else mod.out_features
+            if out in (2, 3):   # typical SepFormer source counts
+                base_n_src = out
+    if base_n_src is None:
+        base_n_src = 3  # assume wsj03mix default
+
     candidate_name, candidate_mod = None, None
     for name, mod in masknet.named_modules():
         if isinstance(mod, (nn.Conv1d, nn.Linear)):
             out = mod.out_channels if isinstance(mod, nn.Conv1d) else mod.out_features
-            if out < 16:  # output head has n_src outputs, not large feature dims
-                candidate_name, candidate_mod = name, mod
+            if out == base_n_src:
+                candidate_name, candidate_mod = name, mod  # keep last match
 
     if candidate_mod is not None and _try_extend(candidate_mod, n_src_new):
-        print(f"  Extended '{candidate_name}' → {n_src_new} sources")
+        print(f"  Extended '{candidate_name}' (out={base_n_src}) → {n_src_new} sources")
         return model
 
     raise RuntimeError(
-        f"Could not find output head to extend to {n_src_new} sources.\n"
+        f"Could not find output head (expected out_dim={base_n_src}) to extend to {n_src_new} sources.\n"
         "Check the printed masknet structure above and extend manually."
     )
 
@@ -291,6 +301,12 @@ def train(args):
         savedir=f"./pretrained_{args.base_model.replace('/', '_')}",
         run_opts={"device": str(device)},
     )
+    # Verify expected module names exist — fail loudly rather than silently
+    assert hasattr(model_sb, "mods"), "model_sb has no .mods — SpeechBrain API changed?"
+    assert hasattr(model_sb.mods, "encoder"),  f"mods has no 'encoder'. Keys: {list(model_sb.mods.keys())}"
+    assert hasattr(model_sb.mods, "masknet"),  f"mods has no 'masknet'. Keys: {list(model_sb.mods.keys())}"
+    assert hasattr(model_sb.mods, "decoder"),  f"mods has no 'decoder'. Keys: {list(model_sb.mods.keys())}"
+    print(f"  mods keys: {list(model_sb.mods.keys())}")
 
     # Extend output head if necessary
     if args.base_n_src < 4:
@@ -366,7 +382,7 @@ def train(args):
             if est.shape[-1] < T:
                 est = torch.nn.functional.pad(est, (0, T - est.shape[-1]))
 
-            loss = get_si_snr_with_pitwrapper(sources, est)
+            loss = get_si_snr_with_pitwrapper(est, sources)
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(
@@ -403,7 +419,7 @@ def train(args):
                 est = est[..., :T]
                 if est.shape[-1] < T:
                     est = torch.nn.functional.pad(est, (0, T - est.shape[-1]))
-                val_loss += get_si_snr_with_pitwrapper(sources, est).item()
+                val_loss += get_si_snr_with_pitwrapper(est, sources).item()
 
         val_loss /= len(val_dl)
         scheduler.step()
