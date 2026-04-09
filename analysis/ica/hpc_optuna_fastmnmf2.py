@@ -154,7 +154,7 @@ def make_objective(n_src_fixed):
         stft_size   = trial.suggest_categorical("stft_size",    [1024, 2048, 4096])
         divisor     = trial.suggest_categorical("hop_divisor",  [2, 4, 8])
         hop_size    = stft_size // divisor
-        n_iter      = trial.suggest_int("n_iter",       30, 150, step=10)
+        n_iter      = trial.suggest_int("n_iter",       30, 300, step=10)
         n_components= trial.suggest_int("n_components", 4,  16,  step=2)
 
         try:
