@@ -185,10 +185,9 @@ print("\nRunning final separation with best params ...")
 mono = auxiva_separate(data, best["stft_size"], best["hop_size"],
                        best["n_iter"], best["proj_back"], best["wiener"])
 
-azimuths = np.linspace(0, 360, 360, endpoint=False)
+# AuxIVA returns single-channel outputs — no multi-mic DoA possible
 for k in range(mono.shape[1]):
-    az = srp_phat_doa([data[:, m] for m in range(4)], sr, azimuths)
-    fname = f"mixture_auxiva_opt_source_{k+1}_{az:.0f}deg.wav"
+    fname = f"mixture_auxiva_opt_source_{k+1}.wav"
     save_wav(os.path.join(OUT_DIR, fname), mono[:, k], sr)
 
 print("\nDone.")

@@ -271,6 +271,7 @@
         { key: "auxiva_tuned",  header: "AuxIVA Tuned",          secDefault: false },
         { key: "auxiva_mtuned",  header: "AuxIVA Mixture-Tuned",  secDefault: false },
         { key: "auxiva_wiener", header: "AuxIVA + Wiener",       secDefault: false },
+        { key: "auxiva_opt",   header: "AuxIVA Optuna ★",      secDefault: true  },
         { key: "ilrma",  header: "ILRMA",         secDefault: false },
         { key: "ilrma_tuned", header: "ILRMA Tuned", secDefault: false },
         { key: "fmnmf2_tuned",  header: "FastMNMF2 (n=4 example · n=5 mixture)", secDefault: true },
@@ -466,6 +467,10 @@
   // AuxIVA + Wiener on mixture
   for (const [n, key, lbl] of [[1,"134deg","~134°"],[2,"178deg","~178°"],[3,"313deg","~313°"],[4,"356deg","~356°"]])
     allTracks.push(track(`mix_auxiva_wiener_${n}`, MIX, "auxiva_wiener", `Source ${n} ${lbl} — AuxIVA+Wiener`, `Wiener post-filter · est. ${lbl} · n_fft=2048 hop=512 iter=90`, "auxiva", `../analysis/ica/separated/mixture_ica_wiener_source_${n}_${key}.wav`));
+
+  // AuxIVA Optuna-optimised (80 trials, best: stft=512 hop=128 iter=40 proj_back=true, cross-corr 0.107)
+  for (let n = 1; n <= 4; n++)
+    allTracks.push(track(`mix_auxiva_opt_${n}`, MIX, "auxiva_opt", `Source ${n} — AuxIVA Optuna`, `Optuna 80 trials · stft=512 hop=128 iter=40 proj_back · cross-corr 0.107`, "auxiva", `../analysis/ica/separated/mixture_auxiva_opt_source_${n}.wav`));
 
   // FastMNMF2 on mixture — n=5 baseline (STFT=2048 hop=512 iter=100 n_comp=6)
   for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"90deg","~90°"],[3,"178deg","~178°"],[4,"313deg","~313°"],[5,"358deg","~358°"]])
