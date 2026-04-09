@@ -20,16 +20,17 @@ mkdir -p analysis/dl_separation/logs
 module load python3/3.12.11
 module load cuda/12.6
 
-VENV=.venv
+VENV=.venv_gpu
 if [ ! -d "$VENV" ]; then
     python3 -m venv "$VENV"
 fi
 source "$VENV/bin/activate"
 
-if ! python3 -c "import torch" 2>/dev/null; then
+pip install --quiet --upgrade pip
+
+if ! python3 -c "import torchaudio; torchaudio.load" 2>/dev/null; then
     echo "Installing PyTorch + torchaudio (cu126)..."
-    pip install --quiet --upgrade pip
-    pip install --quiet torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+    pip install --quiet --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 fi
 
 if ! python3 -c "import speechbrain" 2>/dev/null; then

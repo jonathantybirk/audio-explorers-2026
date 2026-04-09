@@ -41,7 +41,7 @@ fi
 echo "=== Setting up Python env ==="
 module load python3/3.12.11
 
-VENV=$BLACKHOLE/.venv_dataprep
+VENV=.venv_dataprep
 if [ ! -d "$VENV" ]; then
     python3 -m venv "$VENV"
 fi
