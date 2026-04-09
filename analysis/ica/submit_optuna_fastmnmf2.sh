@@ -1,10 +1,9 @@
 #!/bin/sh
 ### -- LSF job: Optuna hyperparameter search for FastMNMF2 on mixture.wav --
 ### -- CPU-only job. Searches n_src=5,6,7,8 with 50 trials each. --
-#BSUB -q gpua100
+#BSUB -q hpc
 #BSUB -J optuna_fmnmf2
 #BSUB -n 8
-#BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=32GB] span[hosts=1]"
 #BSUB -B

@@ -1,10 +1,9 @@
 #!/bin/sh
 ### -- LSF job script: download LibriSpeech + generate Libri4Mix into $BLACKHOLE --
 ### -- Runs on a CPU node, no GPU needed. Submit this BEFORE the training jobs. --
-#BSUB -q gpua100
+#BSUB -q hpc
 #BSUB -J dataprep
 #BSUB -n 4
-#BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=16GB] span[hosts=1]"
 #BSUB -B

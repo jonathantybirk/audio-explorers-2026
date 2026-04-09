@@ -1,10 +1,9 @@
 #!/bin/sh
 ### -- LSF job: Optuna hyperparameter search for AuxIVA on mixture.wav --
 ### -- CPU-only job, 80 trials. --
-#BSUB -q gpua100
+#BSUB -q hpc
 #BSUB -J optuna_auxiva
 #BSUB -n 4
-#BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
 #BSUB -R "rusage[mem=16GB] span[hosts=1]"
 #BSUB -B
