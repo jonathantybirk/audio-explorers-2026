@@ -228,6 +228,7 @@
           <span><span class="dot" style="background:#9d174d"></span> ConvTasNet</span>
           <span><span class="dot" style="background:#86198f"></span> DPRNN</span>
           <span><span class="dot" style="background:#0e7490"></span> SepFormer 4-src</span>
+          <span><span class="dot" style="background:#15803d"></span> ICA + Enhancement</span>
         </div>
         <div class="polar-wrap">
           <h3 id="polar-title"></h3>
@@ -256,32 +257,44 @@
         { key: "scene",  header: "Scene",         secDefault: true },
         { key: "mic",    header: "Microphones",   secDefault: true },
     ]},
-    { id: "beamform", label: "Beamforming",      colDefault: true, sections: [
+    { id: "beamform", label: "Beamforming",      colDefault: false, sections: [
         { key: "das",    header: "Delay-and-Sum", secDefault: false },
         { key: "mvdr",   header: "MVDR",          secDefault: false },
-        { key: "mmvdr",  header: "Mask-MVDR",     secDefault: true },
+        { key: "mmvdr",  header: "Mask-MVDR",     secDefault: false },
         { key: "mmvdr_em", header: "Mask-MVDR (Spatial EM)", secDefault: false },
         { key: "diar_mvdr", header: "Diarization-MVDR", secDefault: false },
     ]},
     { id: "bss",      label: "Source Separation",colDefault: true, sections: [
         { key: "duet",   header: "DUET",          secDefault: false },
         { key: "tdica",  header: "Time-domain ICA",secDefault: false },
-        { key: "auxiva", header: "AuxIVA",        secDefault: true },
+        { key: "auxiva", header: "AuxIVA",        secDefault: false },
         { key: "auxiva_tuned",  header: "AuxIVA Tuned",          secDefault: false },
         { key: "auxiva_mtuned",  header: "AuxIVA Mixture-Tuned",  secDefault: false },
         { key: "auxiva_wiener", header: "AuxIVA + Wiener",       secDefault: false },
-        { key: "ilrma",  header: "ILRMA",         secDefault: true },
+        { key: "ilrma",  header: "ILRMA",         secDefault: false },
         { key: "ilrma_tuned", header: "ILRMA Tuned", secDefault: false },
-        { key: "fmnmf2",      header: "FastMNMF2",              secDefault: false },
-        { key: "fmnmf2_tuned",header: "FastMNMF2 Tuned",        secDefault: false },
+        { key: "fmnmf2",      header: "FastMNMF2",              secDefault: true },
+        { key: "fmnmf2_tuned",header: "FastMNMF2 Tuned",        secDefault: true },
         { key: "spatial_em", header: "Spatial EM", secDefault: false },
     ]},
-    { id: "dl",       label: "Deep Learning",    colDefault: true, sections: [
-        { key: "sfwhamr",  header: "SepFormer WHAMR ★",  secDefault: true },
+    { id: "dl",       label: "Deep Learning",    colDefault: false, sections: [
+        { key: "sfwhamr",  header: "SepFormer WHAMR ★",  secDefault: false },
         { key: "sflibri",  header: "SepFormer Libri3Mix", secDefault: false },
         { key: "ctlibri",  header: "ConvTasNet LibriMix", secDefault: false },
         { key: "dprnn",    header: "DPRNN WHAM!",         secDefault: false },
-        { key: "sf4mix",   header: "SepFormer Libri4Mix ★", secDefault: true },
+        { key: "sf4mix",   header: "SepFormer Libri4Mix ★", secDefault: false },
+    ]},
+    { id: "enhanced", label: "ICA + Enhancement", colDefault: false, sections: [
+        { key: "fmnmf2t_mg",    header: "FastMNMF2 Tuned + MetricGAN+ ★", secDefault: true },
+        { key: "fmnmf2t_wpe",   header: "FastMNMF2 Tuned + WPE",          secDefault: false },
+        { key: "fmnmf2t_wpemg", header: "FastMNMF2 Tuned + WPE + MetricGAN+", secDefault: false },
+        { key: "icaw_mg",       header: "ICA Wiener + MetricGAN+",         secDefault: false },
+        { key: "icaw_wpe",      header: "ICA Wiener + WPE",                secDefault: false },
+        { key: "icaw_wpemg",    header: "ICA Wiener + WPE + MetricGAN+",   secDefault: false },
+    ]},
+    { id: "steered", label: "Steered Beamforming", colDefault: true, sections: [
+        { key: "srdas",  header: "Delay-and-Sum (SRP peaks)", secDefault: true },
+        { key: "srmvdr", header: "MVDR (SRP peaks)",          secDefault: true },
     ]},
   ];
 
@@ -365,13 +378,13 @@
     ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
     ["180deg_back","180° Back","180"],["270deg_right","270° Right","270"]
   ])
-    allTracks.push(track(`ex_fmnmf2_${dirKey}`, EX, "fmnmf2", `${dirLabel} — FastMNMF2`, `default hp · est. ${doa}° · iter=50 n_comp=8`, "auxiva", `../analysis/ica/separated/fmnmf2_${dirKey}.wav`));
+    allTracks.push(track(`ex_fmnmf2_${dirKey}`, EX, "fmnmf2", `${dirLabel} — FastMNMF2`, `default · STFT=2048 hop=1024 iter=50 n_comp=8 n_src=4 · est. ${doa}°`, "auxiva", `../analysis/ica/separated/fmnmf2_${dirKey}.wav`));
 
   for (const [dirKey, dirLabel, doa] of [
     ["0deg_front","0° Front","2"],["90deg_left","90° Left","90"],
     ["180deg_back","180° Back","180"],["270deg_right","270° Right","290"]
   ])
-    allTracks.push(track(`ex_fmnmf2_tuned_${dirKey}`, EX, "fmnmf2_tuned", `${dirLabel} — FastMNMF2 tuned`, `tuned hp · est. ${doa}° · iter=100 n_comp=4`, "auxiva", `../analysis/ica/separated/fmnmf2_tuned_${dirKey}.wav`));
+    allTracks.push(track(`ex_fmnmf2_tuned_${dirKey}`, EX, "fmnmf2_tuned", `${dirLabel} — FastMNMF2 tuned`, `tuned on example_mixture.wav · est. ${doa}° · STFT=2048 hop=512 iter=100 n_comp=6 n_src=4`, "auxiva", `../analysis/ica/separated/fmnmf2_tuned_${dirKey}.wav`));
 
   for (const [dirKey, dirLabel, doa] of [
     ["0deg_front","0° Front","4"],["90deg_left","90° Left","90"],
@@ -458,13 +471,13 @@
   for (const [n, key, lbl] of [[1,"134deg","~134°"],[2,"178deg","~178°"],[3,"313deg","~313°"],[4,"356deg","~356°"]])
     allTracks.push(track(`mix_auxiva_wiener_${n}`, MIX, "auxiva_wiener", `Source ${n} ${lbl} — AuxIVA+Wiener`, `Wiener post-filter · est. ${lbl} · n_fft=2048 hop=512 iter=90`, "auxiva", `../analysis/ica/separated/mixture_ica_wiener_source_${n}_${key}.wav`));
 
-  // FastMNMF2 on mixture — default collapsed ~135° source into ~90° (cross-corr 0.54)
-  for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"180deg","~180°"],[3,"313deg","~313°"],[4,"356deg","~356°"]])
-    allTracks.push(track(`mix_fmnmf2_${n}`, MIX, "fmnmf2", `Source ${n} ${lbl} — FastMNMF2`, `default hp · est. ${lbl} · iter=50 n_comp=8`, "auxiva", `../analysis/ica/separated/mixture_fmnmf2_source_${n}_${key}.wav`));
+  // FastMNMF2 on mixture — default, 5 sources (n_src=5 matching SRP-PHAT peaks)
+  for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"134deg","~134°"],[3,"218deg","~218°"],[4,"313deg","~313°"],[5,"358deg","~358°"]])
+    allTracks.push(track(`mix_fmnmf2_${n}`, MIX, "fmnmf2", `Source ${n} ${lbl} — FastMNMF2`, `default · STFT=2048 hop=1024 iter=50 n_comp=8 n_src=5 · est. ${lbl}`, "auxiva", `../analysis/ica/separated/mixture_fmnmf2_source_${n}_${key}.wav`));
 
-  // FastMNMF2 tuned on mixture — all 4 sources separated (cross-corr 0.26)
-  for (const [n, key, lbl] of [[1,"134deg","~134°"],[2,"178deg","~178°"],[3,"313deg","~313°"],[4,"356deg","~356°"]])
-    allTracks.push(track(`mix_fmnmf2_tuned_${n}`, MIX, "fmnmf2_tuned", `Source ${n} ${lbl} — FastMNMF2 tuned`, `tuned hp · est. ${lbl} · iter=100 n_comp=4`, "auxiva", `../analysis/ica/separated/mixture_fmnmf2_tuned_source_${n}_${key}.wav`));
+  // FastMNMF2 tuned on mixture — 5 sources (n_src=5, cross-corr 0.73)
+  for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"90deg","~90°"],[3,"178deg","~178°"],[4,"313deg","~313°"],[5,"358deg","~358°"]])
+    allTracks.push(track(`mix_fmnmf2_tuned_${n}`, MIX, "fmnmf2_tuned", `Source ${n} ${lbl} — FastMNMF2 tuned`, `tuned on example_mixture.wav · STFT=2048 hop=512 iter=100 n_comp=6 n_src=5 · est. ${lbl} · cross-corr 0.73`, "auxiva", `../analysis/ica/separated/mixture_fmnmf2_tuned_source_${n}_${key}.wav`));
 
   for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
     allTracks.push(track(`mix_ilrma_tuned_${n}`, MIX, "ilrma_tuned", `Source ${n} ${lbl} — ILRMA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=110 · NMF_k=2`, "ilrma", `${MA}/ilrma_tuned_source_${n}_${key}.wav`));
@@ -480,6 +493,22 @@
       `Source ${i} — SepFormer Libri4Mix`,
       `4-src · 48 kHz · hahmadraz/sepformer-libri4mix`,
       "sf4mix", `${DL}/example_sepformer4_libri4mix_src${i}.wav`));
+
+  // ── EXAMPLE — ICA + Enhancement ──────────────────────────────────────────────
+  const EH = "../analysis/ica/enhanced";
+  for (const [dirKey, dirLabel, doa] of [
+    ["0deg_front","0° Front","2"],["90deg_left","90° Left","90"],
+    ["180deg_back","180° Back","180"],["270deg_right","270° Right","290"]
+  ]) {
+    allTracks.push(track(`ex_fmnmf2t_mg_${dirKey}`,    EX, "fmnmf2t_mg",    `${dirLabel} — FastMNMF2T + MetricGAN+`,     `DNSMOS OVRL 2.49 (best) · BAK 3.65`,         "auxiva", `${EH}/fmnmf2_tuned_${dirKey}_metricgan.wav`));
+    allTracks.push(track(`ex_fmnmf2t_wpe_${dirKey}`,   EX, "fmnmf2t_wpe",   `${dirLabel} — FastMNMF2T + WPE`,            `WPE dereverberation`,                        "auxiva", `${EH}/fmnmf2_tuned_${dirKey}_wpe.wav`));
+    allTracks.push(track(`ex_fmnmf2t_wpemg_${dirKey}`, EX, "fmnmf2t_wpemg", `${dirLabel} — FastMNMF2T + WPE + MetricGAN+`,`WPE → MetricGAN+ cascade`,                  "auxiva", `${EH}/fmnmf2_tuned_${dirKey}_wpe_metricgan.wav`));
+  }
+  for (const [n, key, lbl, doa] of [[1,"2deg","2°","2"],[2,"90deg","90°","90"],[3,"180deg","180°","180"],[4,"270deg","270°","270"]]) {
+    allTracks.push(track(`ex_icaw_mg_${n}`,    EX, "icaw_mg",    `Source ${n} ${lbl} — ICA Wiener + MetricGAN+`,     `ICA Wiener · est. ${doa}°`,                  "auxiva", `${EH}/ica_wiener_source_${n}_${key}_metricgan.wav`));
+    allTracks.push(track(`ex_icaw_wpe_${n}`,   EX, "icaw_wpe",   `Source ${n} ${lbl} — ICA Wiener + WPE`,            `ICA Wiener + WPE dereverberation`,            "auxiva", `${EH}/ica_wiener_source_${n}_${key}_wpe.wav`));
+    allTracks.push(track(`ex_icaw_wpemg_${n}`, EX, "icaw_wpemg", `Source ${n} ${lbl} — ICA Wiener + WPE + MetricGAN+`,`WPE → MetricGAN+ cascade`,                   "auxiva", `${EH}/ica_wiener_source_${n}_${key}_wpe_metricgan.wav`));
+  }
 
   // ── MIXTURE — Deep Learning ───────────────────────────────────────────────────
   // SepFormer WHAMR — MOS 2.61, cross-corr 0.235 (vs 0.099 on example — harder scene)
@@ -513,6 +542,21 @@
       `4-src · 48 kHz · hahmadraz/sepformer-libri4mix`,
       "sf4mix", `${DL}/mixture_sepformer4_libri4mix_src${i}.wav`));
 
+  // ── MIXTURE — ICA + Enhancement (5-source fmnmf2 tuned outputs, sources 1-4 have enhanced files)
+  for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"90deg","~90°"],[3,"178deg","~178°"],[4,"313deg","~313°"]]) {
+    allTracks.push(track(`mix_fmnmf2t_mg_${n}`,    MIX, "fmnmf2t_mg",    `Source ${n} ${lbl} — FastMNMF2T + MetricGAN+`,       `n_src=5 · MetricGAN+ enhancement`, "auxiva", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_metricgan.wav`));
+    allTracks.push(track(`mix_fmnmf2t_wpe_${n}`,   MIX, "fmnmf2t_wpe",   `Source ${n} ${lbl} — FastMNMF2T + WPE`,              `n_src=5 · WPE dereverberation`,    "auxiva", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_wpe.wav`));
+    allTracks.push(track(`mix_fmnmf2t_wpemg_${n}`, MIX, "fmnmf2t_wpemg", `Source ${n} ${lbl} — FastMNMF2T + WPE + MetricGAN+`, `n_src=5 · WPE → MetricGAN+`,       "auxiva", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_wpe_metricgan.wav`));
+  }
+
+  // ── MIXTURE — Steered Beamforming (SRP-PHAT peaks) ───────────────────────────
+  // SRP-PHAT found 5 peaks: 2°, 90°, 178°, 228.5°, 270°
+  const SB = "../analysis/steered_beamform/outputs";
+  for (const [n, az, lbl] of [[1,"2","~2°"],[2,"90","~90°"],[3,"178","~178°"],[4,"228","~228°"],[5,"270","~270°"]]) {
+    allTracks.push(track(`mix_srdas_${n}`,  MIX, "srdas",  `${lbl} — Delay-and-Sum`,  `SRP-PHAT peak · steered toward ${az}°`, "das",  `${SB}/das_peak${n}_${az}deg.wav`));
+    allTracks.push(track(`mix_srmvdr_${n}`, MIX, "srmvdr", `${lbl} — MVDR`,           `SRP-PHAT peak · steered toward ${az}°`, "mvdr", `${SB}/mvdr_peak${n}_${az}deg.wav`));
+  }
+
   // ── Per-recording metadata ──────────────────────────────────────────────────
   const RECORDING_META = {
     example: {
@@ -527,17 +571,16 @@
       polarNote:  "SRP-PHAT spatial spectrum of <code>example_mixture.wav</code>. DoA estimates: ~3°, 90°, ~178°, 270°. Known positions: 0°, 90°, 180°, 270°.",
     },
     mixture: {
-      sub: `<code>mixture.wav</code> — talker positions unknown, estimated from the signal.<br>
-            SRP-PHAT: ~2° / 90° / 270° / 358°.<br>
-            AuxIVA default: ~134° / ~178° / ~313° / ~356°.<br>
-            AuxIVA example-tuned (n_fft=2048 hop=512 iter=90): ~135° / ~178° / ~313° / ~356° — all four cardinals found cleanly.<br>
-            AuxIVA mixture-tuned (Optuna 80 trials on mixture.wav, n_fft=512 hop=128 iter=140): collapsed two sources to ~90°, missing 180° — blind cross-corr metric did not predict spatial quality here.<br>
-            ILRMA default: ~0° / ~134° / 180° / ~313°. ILRMA transfer from example: ~134° / ~178° / ~313° / ~358°.<br>
+      sub: `<code>mixture.wav</code> — at least 7 speakers at unknown positions, estimated from the signal.<br>
+            SRP-PHAT scan found 5 spatial peaks: ~2° / 90° / ~178° / ~228° / 270° — the 90° direction likely contains 2+ overlapping speakers.<br>
+            FastMNMF2 tuned (n_src=5, tuned on example_mixture.wav): separates 5 sources at ~90° / ~90° / ~178° / ~313° / ~358° · cross-corr 0.73.<br>
+            AuxIVA example-tuned (n_fft=2048 hop=512 iter=90): ~135° / ~178° / ~313° / ~356°.<br>
+            ILRMA transfer from example: ~134° / ~178° / ~313° / ~358°.<br>
             Diarization-guided MVDR: pyannote found 2 speakers only (mean DNSMOS 1.92).<br>
             When multiple versions exist, the default clip set stays visible; alternate variants are in hidden subsections.`,
-      polarTitle: "SRP-PHAT — mixture",
-      polarSrc:   "../analysis/srp_phat/mixture_spectrum/srp_phat_mixture_polar.png",
-      polarNote:  "SRP-PHAT spatial spectrum of <code>mixture.wav</code>. Estimated peaks: ~2°, 90°, 270°, 358°.",
+      polarTitle: "SRP-PHAT scan — mixture",
+      polarSrc:   "../analysis/steered_beamform/outputs/srp_phat_scan.png",
+      polarNote:  "SRP-PHAT spatial scan of <code>mixture.wav</code>. Five peaks found: ~2°, 90°, ~178°, ~228°, 270°. Bright = strong source direction.",
     },
   };
 

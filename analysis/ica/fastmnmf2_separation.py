@@ -58,6 +58,8 @@ CARDINAL_KEYS = {
     270: "270deg_right",
 }
 
+_n_src_default = 4 if WAV_KEY == "example" else 5
+
 VARIANTS = [
     {
         "key": "fmnmf2_default",
@@ -66,6 +68,7 @@ VARIANTS = [
         "hop_size": 1024,
         "n_iter": 50,
         "n_components": 8,
+        "n_src": _n_src_default,
         "prefix": f"{_pfx}fmnmf2",
     },
     {
@@ -74,7 +77,8 @@ VARIANTS = [
         "stft_size": 2048,
         "hop_size": 512,
         "n_iter": 100,
-        "n_components": 4,
+        "n_components": 6,
+        "n_src": _n_src_default,
         "prefix": f"{_pfx}fmnmf2_tuned",
     },
 ]
@@ -168,7 +172,7 @@ def nearest_cardinal_label(angle_deg):
 
 
 # ── FastMNMF2 separation ──────────────────────────────────────────────────────
-def fastmnmf2_separate(data, stft_size, hop_size, n_iter, n_components):
+def fastmnmf2_separate(data, stft_size, hop_size, n_iter, n_components, n_src):
     analysis_win = pra.hann(stft_size)
     synthesis_win = pra.transform.stft.compute_synthesis_window(analysis_win, hop_size)
 
@@ -178,7 +182,7 @@ def fastmnmf2_separate(data, stft_size, hop_size, n_iter, n_components):
     # Returns (nchannels, nframes, nfrequencies, nsources) when mic_index='all'
     Y_all = pra.bss.fastmnmf2(
         X,
-        n_src=data.shape[1],
+        n_src=n_src,
         n_iter=n_iter,
         n_components=n_components,
         mic_index="all",
@@ -225,6 +229,7 @@ def run_variant(variant, data, sr, azimuths):
         hop_size=variant["hop_size"],
         n_iter=variant["n_iter"],
         n_components=variant["n_components"],
+        n_src=variant["n_src"],
     )
     n_sources = mono_sources.shape[1]
 
@@ -276,9 +281,12 @@ def run_variant(variant, data, sr, azimuths):
         save_wav(stable_path, mono_sources[:, k], sr)
 
     # ── Spectrogram plot ─────────────────────────────────────────────────────
-    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+    ncols = min(3, n_sources)
+    nrows = (n_sources + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(7 * ncols, 4 * nrows))
+    axes_flat = np.array(axes).flatten()
     for rank, k in enumerate(order):
-        ax = axes[rank // 2][rank % 2]
+        ax = axes_flat[rank]
         ax.specgram(mono_sources[:, k], Fs=sr, NFFT=512, noverlap=256, cmap="inferno")
         ax.set_title(
             f"{variant['title']} source {rank + 1}  —  est. DoA {doas[k]:.1f}°  "
@@ -286,6 +294,8 @@ def run_variant(variant, data, sr, azimuths):
         )
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Frequency (Hz)")
+    for ax in axes_flat[n_sources:]:
+        ax.set_visible(False)
     plt.suptitle(f"{variant['title']} sources — {WAV_KEY}_mixture.wav", fontsize=13)
     plt.tight_layout()
     spec_path = os.path.join(OUT_DIR, f"{prefix}_spectrograms.png")
@@ -294,9 +304,10 @@ def run_variant(variant, data, sr, azimuths):
     print(f"  saved  {os.path.relpath(spec_path)}")
 
     # ── Polar plot ────────────────────────────────────────────────────────────
-    fig, axes = plt.subplots(2, 2, figsize=(12, 12), subplot_kw={"projection": "polar"})
+    fig, axes = plt.subplots(nrows, ncols, figsize=(6 * ncols, 6 * nrows), subplot_kw={"projection": "polar"})
+    axes_flat = np.array(axes).flatten()
     for rank, k in enumerate(order):
-        ax = axes[rank // 2][rank % 2]
+        ax = axes_flat[rank]
         pw = power_grid[k]
         pw_norm = (pw - pw.min()) / (pw.max() - pw.min() + 1e-12)
         az_rad = np.deg2rad(azimuths)
@@ -316,6 +327,8 @@ def run_variant(variant, data, sr, azimuths):
             f"(nearest {cardinal_labels[k]}°)",
             pad=14,
         )
+    for ax in axes_flat[n_sources:]:
+        ax.set_visible(False)
     plt.suptitle(f"Per-source SRP-PHAT — {variant['title']}", fontsize=12)
     plt.tight_layout()
     polar_path = os.path.join(OUT_DIR, f"{prefix}_polar.png")
