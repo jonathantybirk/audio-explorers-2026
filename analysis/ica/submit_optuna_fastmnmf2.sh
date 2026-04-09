@@ -31,7 +31,7 @@ fi
 source "$VENV/bin/activate"
 
 pip install --quiet --upgrade pip
-pip install --quiet pyroomacoustics optuna scipy numpy
+pip install --quiet pyroomacoustics optuna scipy numpy tqdm
 
 echo "=== FastMNMF2 Optuna search ==="
 python3 analysis/ica/hpc_optuna_fastmnmf2.py \

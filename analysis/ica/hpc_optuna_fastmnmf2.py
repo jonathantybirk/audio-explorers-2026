@@ -31,6 +31,12 @@ from scipy.io import wavfile
 warnings.filterwarnings("ignore")
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
+try:
+    from tqdm import tqdm as _tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 WAV_PATH  = os.path.join(REPO_ROOT, "DONT-TOUCH/Software Case/mixture.wav")
 GEO_PATH  = os.path.join(REPO_ROOT, "data", "mic_geometry.json")
@@ -157,12 +163,14 @@ def make_objective(n_src_fixed):
         n_iter      = trial.suggest_int("n_iter",       30, 300, step=10)
         n_components= trial.suggest_int("n_components", 4,  16,  step=2)
 
+        print(f"  trial {trial.number}: stft={stft_size} hop={hop_size} iter={n_iter} n_comp={n_components}", flush=True)
         try:
             mono = fastmnmf2_separate(data, stft_size, hop_size, n_iter,
                                       n_components, n_src_fixed)
             score = cross_corr_sum(mono)
+            print(f"  trial {trial.number}: cross-corr={score:.4f}", flush=True)
         except Exception as e:
-            print(f"  trial failed: {e}")
+            print(f"  trial {trial.number} failed: {e}", flush=True)
             return 999.0
 
         return score
