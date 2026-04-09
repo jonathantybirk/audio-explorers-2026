@@ -66,34 +66,22 @@ if WAV_KEY == "example":
 else:
     _nsrc_sweep = [5, 6, 7, 8]
 
+# One variant per n_src using consistent hand-picked hyperparams:
+#   STFT=2048 hop=512 iter=100 n_comp=6
+# These are NOT Optuna-optimised — Optuna runs separately (hpc_optuna_fastmnmf2.py).
 VARIANTS = []
-
-# ── Default hyperparams (one variant per n_src) ──────────────────────────────
 for _n in _nsrc_sweep:
     _label = f"n_src={_n}" if WAV_KEY == "mixture" else ""
+    _key   = f"fmnmf2_n{_n}" if WAV_KEY == "mixture" else "fmnmf2"
     VARIANTS.append({
-        "key":        f"fmnmf2{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
-        "title":      f"FastMNMF2 default{(' ' + _label) if _label else ''}",
-        "stft_size":  2048,
-        "hop_size":   1024,
-        "n_iter":     50,
-        "n_components": 8,
-        "n_src":      _n,
-        "prefix":     f"{_pfx}fmnmf2{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
-    })
-
-# ── Tuned hyperparams (one variant per n_src) ────────────────────────────────
-for _n in _nsrc_sweep:
-    _label = f"n_src={_n}" if WAV_KEY == "mixture" else ""
-    VARIANTS.append({
-        "key":        f"fmnmf2_tuned{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
-        "title":      f"FastMNMF2 tuned{(' ' + _label) if _label else ''}",
-        "stft_size":  2048,
-        "hop_size":   512,
-        "n_iter":     100,
+        "key":          _key,
+        "title":        f"FastMNMF2{(' ' + _label) if _label else ''}",
+        "stft_size":    2048,
+        "hop_size":     512,
+        "n_iter":       100,
         "n_components": 6,
-        "n_src":      _n,
-        "prefix":     f"{_pfx}fmnmf2_tuned{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
+        "n_src":        _n,
+        "prefix":       f"{_pfx}{_key}",
     })
 
 
