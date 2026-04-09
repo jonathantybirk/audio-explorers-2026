@@ -1,0 +1,35 @@
+=== AuxIVA Optuna search ===
+Loading DONT-TOUCH/Software Case/mixture.wav ...
+  926100 samples | 4 ch | 44100 Hz | 21.0s
+
+Running Optuna (80 trials) ...
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+  trial failed: module 'pyroomacoustics.bss' has no attribute 'project_back'
+
+Best params (cross-corr 0.1073):
+  stft_size: 512
+  n_iter: 40
+  proj_back: True
+  wiener: False
+  hop_size: 128
+  best_cross_corr: 0.1072935325407763
+Saved → analysis/ica/optuna/best_params_auxiva.json
+
+Running final separation with best params ...
+  saved  analysis/ica/separated/mixture_auxiva_opt_source_1_2deg.wav
+  saved  analysis/ica/separated/mixture_auxiva_opt_source_2_2deg.wav
+  saved  analysis/ica/separated/mixture_auxiva_opt_source_3_2deg.wav
+  saved  analysis/ica/separated/mixture_auxiva_opt_source_4_2deg.wav
+
+Done.
+=== Done ===

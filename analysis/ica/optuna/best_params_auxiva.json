@@ -1,0 +1,8 @@
+{
+  "stft_size": 512,
+  "n_iter": 40,
+  "proj_back": true,
+  "wiener": false,
+  "hop_size": 128,
+  "best_cross_corr": 0.1072935325407763
+}
