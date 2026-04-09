@@ -78,7 +78,7 @@ for _n in _nsrc_sweep:
         "title":        f"FastMNMF2{(' ' + _label) if _label else ''}",
         "stft_size":    2048,
         "hop_size":     512,
-        "n_iter":       100,
+        "n_iter":       300,
         "n_components": 6,
         "n_src":        _n,
         "prefix":       f"{_pfx}{_key}",
