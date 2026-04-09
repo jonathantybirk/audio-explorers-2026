@@ -4,7 +4,7 @@
 #BSUB -q hpc
 #BSUB -J dataprep
 #BSUB -n 4
-#BSUB -W 6:00
+#BSUB -W 12:00
 #BSUB -R "rusage[mem=16GB] span[hosts=1]"
 #BSUB -B
 #BSUB -N
@@ -74,7 +74,7 @@ MAX_LEN_S  = 4.0
 MAX_LEN    = int(MAX_LEN_S * SR_OUT)
 SEED       = 42
 
-N_TRAIN    = 20000   # number of 4-speaker mixes for training
+N_TRAIN    = 13000   # 13727 already exist from previous run — skips regen, goes straight to dev
 N_DEV      =  3000   # number of 4-speaker mixes for validation
 
 random.seed(SEED)
