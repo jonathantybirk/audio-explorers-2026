@@ -60,28 +60,41 @@ CARDINAL_KEYS = {
 
 _n_src_default = 4 if WAV_KEY == "example" else 5
 
-VARIANTS = [
-    {
-        "key": "fmnmf2_default",
-        "title": "FastMNMF2 default",
-        "stft_size": 2048,
-        "hop_size": 1024,
-        "n_iter": 50,
+# For mixture we sweep n_src=5..8; for example we only run n_src=4 (known ground truth)
+if WAV_KEY == "example":
+    _nsrc_sweep = [4]
+else:
+    _nsrc_sweep = [5, 6, 7, 8]
+
+VARIANTS = []
+
+# ── Default hyperparams (one variant per n_src) ──────────────────────────────
+for _n in _nsrc_sweep:
+    _label = f"n_src={_n}" if WAV_KEY == "mixture" else ""
+    VARIANTS.append({
+        "key":        f"fmnmf2{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
+        "title":      f"FastMNMF2 default{(' ' + _label) if _label else ''}",
+        "stft_size":  2048,
+        "hop_size":   1024,
+        "n_iter":     50,
         "n_components": 8,
-        "n_src": _n_src_default,
-        "prefix": f"{_pfx}fmnmf2",
-    },
-    {
-        "key": "fmnmf2_tuned",
-        "title": "FastMNMF2 tuned",
-        "stft_size": 2048,
-        "hop_size": 512,
-        "n_iter": 100,
+        "n_src":      _n,
+        "prefix":     f"{_pfx}fmnmf2{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
+    })
+
+# ── Tuned hyperparams (one variant per n_src) ────────────────────────────────
+for _n in _nsrc_sweep:
+    _label = f"n_src={_n}" if WAV_KEY == "mixture" else ""
+    VARIANTS.append({
+        "key":        f"fmnmf2_tuned{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
+        "title":      f"FastMNMF2 tuned{(' ' + _label) if _label else ''}",
+        "stft_size":  2048,
+        "hop_size":   512,
+        "n_iter":     100,
         "n_components": 6,
-        "n_src": _n_src_default,
-        "prefix": f"{_pfx}fmnmf2_tuned",
-    },
-]
+        "n_src":      _n,
+        "prefix":     f"{_pfx}fmnmf2_tuned{'_n' + str(_n) if WAV_KEY == 'mixture' else ''}",
+    })
 
 
 # ── Geometry ──────────────────────────────────────────────────────────────────
