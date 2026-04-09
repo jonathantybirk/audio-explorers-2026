@@ -11,11 +11,16 @@
 #BSUB -o /zhome/53/3/169791/audio-explorers-2026/analysis/ica/optuna/logs/optuna_fmnmf2_%J.out
 #BSUB -e /zhome/53/3/169791/audio-explorers-2026/analysis/ica/optuna/logs/optuna_fmnmf2_%J.err
 
+mkdir -p /zhome/53/3/169791/audio-explorers-2026/analysis/ica/optuna/logs
+
 if [ -n "$LS_SUBCWD" ]; then
   cd "$LS_SUBCWD" || exit 1
 fi
 
-mkdir -p analysis/ica/optuna/logs
+# Fail fast: verify input file exists
+if [ ! -f "DONT-TOUCH/Software Case/mixture.wav" ]; then
+    echo "ERROR: mixture.wav not found. Wrong working directory?" >&2; exit 1
+fi
 
 module load python3/3.12.11
 

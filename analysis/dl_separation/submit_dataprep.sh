@@ -11,11 +11,15 @@
 #BSUB -o /zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/logs/dataprep_%J.out
 #BSUB -e /zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/logs/dataprep_%J.err
 
+mkdir -p /zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/logs
+
 if [ -n "$LS_SUBCWD" ]; then
   cd "$LS_SUBCWD" || exit 1
 fi
 
-mkdir -p analysis/dl_separation/logs
+if [ -z "$BLACKHOLE" ] || [ ! -d "$BLACKHOLE" ]; then
+    echo "ERROR: \$BLACKHOLE not set or not mounted on this node." >&2; exit 1
+fi
 
 DATA=$BLACKHOLE/libri4mix
 LIBRI=$BLACKHOLE/LibriSpeech
