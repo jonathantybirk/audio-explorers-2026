@@ -8,8 +8,8 @@
 #BSUB -R "rusage[mem=16GB] span[hosts=1]"
 #BSUB -B
 #BSUB -N
-#BSUB -o analysis/ica/optuna/logs/optuna_auxiva_%J.out
-#BSUB -e analysis/ica/optuna/logs/optuna_auxiva_%J.err
+#BSUB -o /zhome/53/3/169791/audio-explorers-2026/analysis/ica/optuna/logs/optuna_auxiva_%J.out
+#BSUB -e /zhome/53/3/169791/audio-explorers-2026/analysis/ica/optuna/logs/optuna_auxiva_%J.err
 
 if [ -n "$LS_SUBCWD" ]; then
   cd "$LS_SUBCWD" || exit 1

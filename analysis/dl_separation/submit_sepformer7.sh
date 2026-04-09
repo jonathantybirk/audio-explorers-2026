@@ -9,8 +9,8 @@
 #BSUB -R "rusage[mem=40GB] span[hosts=1]"
 #BSUB -B
 #BSUB -N
-#BSUB -o analysis/dl_separation/logs/sepformer7_%J.out
-#BSUB -e analysis/dl_separation/logs/sepformer7_%J.err
+#BSUB -o /zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/logs/sepformer7_%J.out
+#BSUB -e /zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/logs/sepformer7_%J.err
 
 if [ -n "$LS_SUBCWD" ]; then
   cd "$LS_SUBCWD" || exit 1
