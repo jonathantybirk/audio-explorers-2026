@@ -1,10 +1,11 @@
 #!/bin/sh
 ### -- LSF job: generate Libri7Mix training data into $BLACKHOLE --
 ### -- CPU-only. Run this BEFORE submit_sepformer7.sh. --
-#BSUB -q hpc
+#BSUB -q gpua100
 #BSUB -J dataprep7
 #BSUB -n 4
-#BSUB -W 8:00
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 24:00
 #BSUB -R "rusage[mem=24GB] span[hosts=1]"
 #BSUB -B
 #BSUB -N
