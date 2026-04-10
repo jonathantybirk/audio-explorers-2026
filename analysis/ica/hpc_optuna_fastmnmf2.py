@@ -215,24 +215,8 @@ for n_src in NSRC_LIST:
         n_src        = n_src,
     )
 
-    azimuths = np.linspace(0, 360, 360, endpoint=False)
-
-    # Re-synthesise per-mic images for proper DoA estimation
-    analysis_win  = pra.hann(best["stft_size"])
-    synthesis_win = pra.transform.stft.compute_synthesis_window(analysis_win, best["hop_size"])
-    X = pra.transform.stft.analysis(data, best["stft_size"], best["hop_size"], win=analysis_win)
-    Y_all = pra.bss.fastmnmf2(X, n_src=n_src, n_iter=best["n_iter"],
-                               n_components=best["n_components"], mic_index="all")
-    n_samples = data.shape[0]
-
-    for k in range(Y_all.shape[3]):
-        chans = []
-        for mic in range(Y_all.shape[0]):
-            sig = pra.transform.stft.synthesis(
-                Y_all[mic, :, :, k], best["stft_size"], best["hop_size"], win=synthesis_win)
-            chans.append(sig[:n_samples].real.astype(np.float64))
-        az = srp_phat_doa(chans, sr, azimuths)
-        fname = f"mixture_fmnmf2_opt_n{n_src}_source_{k+1}_{az:.0f}deg.wav"
+    for k in range(mono.shape[1]):
+        fname = f"mixture_fmnmf2_opt_n{n_src}_source_{k+1}.wav"
         save_wav(os.path.join(OUT_DIR, fname), mono[:, k], sr)
 
 print("\nDone.")

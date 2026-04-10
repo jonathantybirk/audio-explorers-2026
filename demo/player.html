@@ -278,7 +278,8 @@
         { key: "fmnmf2_n6",     header: "FastMNMF2 n=6",                 secDefault: false },
         { key: "fmnmf2_n7",     header: "FastMNMF2 n=7",                 secDefault: false },
         { key: "fmnmf2_n8",     header: "FastMNMF2 n=8",                 secDefault: false },
-        { key: "fmnmf2_opt",    header: "FastMNMF2 Optuna ★ (mixture)",  secDefault: false },
+        { key: "fmnmf2_opt5",   header: "FastMNMF2 Optuna n=5 ★ (mixture)", secDefault: false },
+        { key: "fmnmf2_opt7",   header: "FastMNMF2 Optuna n=7 ★ (mixture)", secDefault: false },
         { key: "spatial_em", header: "Spatial EM", secDefault: false },
     ]},
     { id: "dl",       label: "Deep Learning",    colDefault: false, sections: [
@@ -485,14 +486,19 @@
         "auxiva", `../analysis/ica/separated/mixture_fmnmf2_n${nsrc}_source_${n}_Xdeg.wav`));
   }
 
-  // FastMNMF2 Optuna-optimised — run hpc_optuna_fastmnmf2.py to generate
-  for (const nsrc of [5, 6, 7, 8]) {
-    for (let n = 1; n <= nsrc; n++)
-      allTracks.push(track(`mix_fmnmf2_opt_n${nsrc}_${n}`, MIX, "fmnmf2_opt",
-        `Source ${n} (n=${nsrc}) — FastMNMF2 Optuna`,
-        `Optuna-optimised hyperparams n_src=${nsrc} · run HPC job to generate`,
-        "auxiva", `../analysis/ica/separated/mixture_fmnmf2_opt_n${nsrc}_source_${n}_Xdeg.wav`));
-  }
+  // FastMNMF2 Optuna n=5 (stft=2048 hop=256 iter=240 n_comp=6 · cross-corr 0.373)
+  for (let n = 1; n <= 5; n++)
+    allTracks.push(track(`mix_fmnmf2_opt5_${n}`, MIX, "fmnmf2_opt5",
+      `Source ${n} — FastMNMF2 Optuna n=5`,
+      `Optuna 50 trials · stft=2048 hop=256 iter=240 n_comp=6 · cross-corr 0.373`,
+      "auxiva", `../analysis/ica/separated/mixture_fmnmf2_opt_n5_source_${n}.wav`));
+
+  // FastMNMF2 Optuna n=7 — dedicated job running now
+  for (let n = 1; n <= 7; n++)
+    allTracks.push(track(`mix_fmnmf2_opt7_${n}`, MIX, "fmnmf2_opt7",
+      `Source ${n} — FastMNMF2 Optuna n=7`,
+      `Optuna 50 trials · stft/hop/iter/n_comp from Bayesian search`,
+      "auxiva", `../analysis/ica/separated/mixture_fmnmf2_opt_n7_source_${n}.wav`));
 
   for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
     allTracks.push(track(`mix_ilrma_tuned_${n}`, MIX, "ilrma_tuned", `Source ${n} ${lbl} — ILRMA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=110 · NMF_k=2`, "ilrma", `${MA}/ilrma_tuned_source_${n}_${key}.wav`));
