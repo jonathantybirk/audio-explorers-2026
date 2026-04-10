@@ -215,12 +215,34 @@ def train(args):
         optimizer, mode="min", patience=5, factor=0.5, min_lr=1e-6
     )
 
-    train_ds = Libri7MixDataset(args.train_dir, sr=args.sr, max_len_s=args.max_len_s)
-    val_ds   = Libri7MixDataset(args.val_dir,   sr=args.sr, max_len_s=args.max_len_s)
+    full_ds = Libri7MixDataset(args.train_dir, sr=args.sr, max_len_s=args.max_len_s)
+
+    # Use separate val-dir if it exists and has data; otherwise split train 90/10
+    val_dl = None
+    if args.val_dir:
+        val_files = glob.glob(os.path.join(args.val_dir, "mix", "*.wav"))
+        if len(val_files) > 0:
+            val_ds = Libri7MixDataset(args.val_dir, sr=args.sr, max_len_s=args.max_len_s)
+            train_ds = full_ds
+            val_dl = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
+                                num_workers=args.num_workers, pin_memory=True, drop_last=False)
+            print(f"  Using separate val dir: {len(val_files)} mixes")
+        else:
+            print(f"  val-dir '{args.val_dir}' is empty — falling back to 90/10 split")
+
+    if val_dl is None:
+        n_val = max(1, int(0.1 * len(full_ds)))
+        n_train = len(full_ds) - n_val
+        train_ds, val_ds = torch.utils.data.random_split(
+            full_ds, [n_train, n_val],
+            generator=torch.Generator().manual_seed(42)
+        )
+        val_dl = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
+                            num_workers=args.num_workers, pin_memory=True, drop_last=False)
+        print(f"  Train/val split: {n_train}/{n_val}")
+
     train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
                           num_workers=args.num_workers, pin_memory=True, drop_last=True)
-    val_dl   = DataLoader(val_ds,   batch_size=args.batch_size, shuffle=False,
-                          num_workers=args.num_workers, pin_memory=True, drop_last=False)
 
     os.makedirs(args.ckpt_dir, exist_ok=True)
     best_val = float("inf")
@@ -271,7 +293,7 @@ def train(args):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--train-dir",   required=True)
-    p.add_argument("--val-dir",     required=True)
+    p.add_argument("--val-dir",     default="")
     p.add_argument("--sr",          type=int,   default=16000)
     p.add_argument("--n-fft",       type=int,   default=512)
     p.add_argument("--hop",         type=int,   default=256)

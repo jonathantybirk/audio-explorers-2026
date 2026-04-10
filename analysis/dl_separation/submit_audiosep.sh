@@ -40,7 +40,11 @@ if ! python3 -c "import torchaudio; torchaudio.load" 2>/dev/null; then
     pip install --quiet --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 fi
 
-pip install --quiet audiosep soundfile
+pip install --quiet soundfile
+if ! python3 -c "from audiosep import AudioSep" 2>/dev/null; then
+    echo "Installing AudioSep from GitHub..."
+    pip install --quiet git+https://github.com/Audio-AGI/AudioSep
+fi
 
 nvidia-smi
 

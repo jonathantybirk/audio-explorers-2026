@@ -56,6 +56,6 @@ python3 analysis/dl_separation/hpc_train_tfgridnet7.py \
     --epochs     50 \
     --batch-size 4 \
     --num-workers 4 \
-    --ckpt-dir   analysis/dl_separation/logs/tfgridnet7_ckpt
+    --ckpt-dir   $BLACKHOLE/tfgridnet7_ckpt
 
 echo "=== Done ==="

@@ -89,59 +89,69 @@ def extend_output_to_n_src(model: nn.Module, n_src_new: int) -> nn.Module:
             print(f"  {name:60s}  {type(module).__name__}  out={out_dim}")
     print("─────────────────────────────────────\n")
 
-    def _try_extend(layer, n_new):
-        if isinstance(layer, nn.Conv1d):
-            n_old = layer.out_channels
-            if n_old >= n_new:
-                return False
-            repeats = (n_new + n_old - 1) // n_old
-            new_w = torch.cat([layer.weight.data] * repeats, dim=0)[:n_new]
-            layer.out_channels = n_new
-            layer.weight = nn.Parameter(new_w)
-            if layer.bias is not None:
-                layer.bias = nn.Parameter(torch.cat([layer.bias.data] * repeats)[:n_new])
-            return True
-        if isinstance(layer, nn.Linear):
-            n_old = layer.out_features
-            if n_old >= n_new:
-                return False
-            repeats = (n_new + n_old - 1) // n_old
-            new_w = torch.cat([layer.weight.data] * repeats, dim=0)[:n_new]
-            layer.out_features = n_new
-            layer.weight = nn.Parameter(new_w)
-            if layer.bias is not None:
-                layer.bias = nn.Parameter(torch.cat([layer.bias.data] * repeats)[:n_new])
-            return True
-        return False
+    n_src_old = getattr(masknet, "num_spks", None)
+    print(f"  masknet.num_spks = {n_src_old}")
+    if n_src_old is None:
+        n_src_old = 3  # default: wsj03mix base
 
-    if hasattr(masknet, "output_layer"):
-        if _try_extend(masknet.output_layer, n_src_new):
-            print(f"  Extended masknet.output_layer → {n_src_new} sources")
-            return model
-
-    base_n_src = None
-    for name, mod in masknet.named_modules():
-        if isinstance(mod, (nn.Conv1d, nn.Linear)):
-            out = mod.out_channels if isinstance(mod, nn.Conv1d) else mod.out_features
-            if out in (2, 3):
-                base_n_src = out
-    if base_n_src is None:
-        base_n_src = 3
-
-    candidate_name, candidate_mod = None, None
-    for name, mod in masknet.named_modules():
-        if isinstance(mod, (nn.Conv1d, nn.Linear)):
-            out = mod.out_channels if isinstance(mod, nn.Conv1d) else mod.out_features
-            if out == base_n_src:
-                candidate_name, candidate_mod = name, mod
-
-    if candidate_mod is not None and _try_extend(candidate_mod, n_src_new):
-        print(f"  Extended '{candidate_name}' (out={base_n_src}) → {n_src_new} sources")
+    if n_src_old == n_src_new:
+        print("  num_spks already matches target, no surgery needed.")
         return model
 
-    raise RuntimeError(
-        f"Could not find output head (expected out_dim={base_n_src}) to extend to {n_src_new} sources."
-    )
+    extended = 0
+
+    # Strategy 1: look for Conv1d where out_channels is divisible by n_src_old
+    # These are source-output projections (N * n_src_old → N * n_src_new)
+    for name, mod in masknet.named_modules():
+        if isinstance(mod, nn.Conv1d) and mod.out_channels > n_src_old \
+                and mod.out_channels % n_src_old == 0:
+            N = mod.out_channels // n_src_old
+            repeats = -(-n_src_new // n_src_old)
+            new_w = mod.weight.data.repeat(repeats, 1, 1)[: N * n_src_new]
+            mod.out_channels = N * n_src_new
+            mod.weight = nn.Parameter(new_w)
+            if mod.bias is not None:
+                mod.bias = nn.Parameter(
+                    mod.bias.data.repeat(repeats)[: N * n_src_new]
+                )
+            print(f"  [s1] Extended '{name}': {N * n_src_old} → {N * n_src_new}")
+            extended += 1
+
+    # Strategy 2 (fallback): find layers named 'output' and rebuild them,
+    # mapping in_channels → in_channels * n_src_new (reinit, copy what we can)
+    if extended == 0:
+        print("  Strategy 1 found nothing. Falling back to output-name search...")
+        for name, mod in masknet.named_modules():
+            if "output" in name.lower() and isinstance(mod, nn.Conv1d):
+                in_ch = mod.in_channels
+                old_out = mod.out_channels
+                new_out = in_ch * n_src_new
+                new_w = torch.empty(new_out, *mod.weight.shape[1:])
+                nn.init.kaiming_uniform_(new_w, a=0)
+                n_copy = min(old_out, new_out)
+                new_w[:n_copy] = mod.weight.data[:n_copy]
+                mod.out_channels = new_out
+                mod.weight = nn.Parameter(new_w)
+                if mod.bias is not None:
+                    new_b = torch.zeros(new_out)
+                    new_b[:min(len(mod.bias.data), new_out)] = \
+                        mod.bias.data[:min(len(mod.bias.data), new_out)]
+                    mod.bias = nn.Parameter(new_b)
+                print(f"  [s2] Rebuilt '{name}' (in={in_ch}): {old_out} → {new_out}")
+                extended += 1
+
+    if hasattr(masknet, "num_spks"):
+        masknet.num_spks = n_src_new
+        print(f"  Updated masknet.num_spks → {n_src_new}")
+
+    if extended == 0:
+        raise RuntimeError(
+            f"Could not find any output layers to extend to {n_src_new} sources.\n"
+            f"Dump of masknet: {masknet}"
+        )
+
+    print(f"  Extended {extended} layer(s) total.")
+    return model
 
 
 # ── Dataset ───────────────────────────────────────────────────────────────────
