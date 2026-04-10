@@ -1,0 +1,8 @@
+=== FastMNMF2 Optuna search ===
+Loading DONT-TOUCH/Software Case/mixture.wav ...
+  926100 samples | 4 ch | 44100 Hz | 21.0s
+
+
+======================================================================
+  Optimising n_src=5  (50 trials, 1 workers)
+======================================================================

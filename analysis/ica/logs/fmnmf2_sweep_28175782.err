@@ -1,0 +1,11 @@
+Loaded dependency [python3/3.12.11]: sqlite3/3.50.1
+Loaded dependency [python3/3.12.11]: gcc/14.3.0-binutils-2.44
+Loaded module: python3/3.12.11
+
+Loading python3/3.12.11
+  Loading requirement: sqlite3/3.50.1 gcc/14.3.0-binutils-2.44
+ERROR: Operation cancelled by user
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/ica/fastmnmf2_separation.py", line 32, in <module>
+    import matplotlib.pyplot as plt
+ModuleNotFoundError: No module named 'matplotlib'

@@ -1,0 +1,12 @@
+=== Downloading LibriSpeech (skips if already present) ===
+/zhome/53/3/169791/audio-explorers-2026
+=== Setting up Python env ===
+=== Generating Libri7Mix (7-source mixes with room simulation) ===
+
+Generating 20000 training mixes...
+  /dtu/blackhole/1f/169791/LibriSpeech/train-clean-360: 300 speakers
+  500/20000 done
+  1000/20000 done
+  1500/20000 done
+=== Done. Libri7Mix written to /dtu/blackhole/1f/169791/libri7mix ===
+train-360

@@ -1,0 +1,17 @@
+Loaded dependency [python3/3.12.11]: sqlite3/3.50.1
+Loaded dependency [python3/3.12.11]: gcc/14.3.0-binutils-2.44
+Loaded module: python3/3.12.11
+
+Loading python3/3.12.11
+  Loading requirement: sqlite3/3.50.1 gcc/14.3.0-binutils-2.44
+Loaded module: cuda/12.6
+Could not parse CUDA device string 'cuda': not enough values to unpack (expected 2, got 1). Falling back to device 0.
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_finetune_sepformer7.py", line 351, in <module>
+    train(args)
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_finetune_sepformer7.py", line 251, in train
+    model_sb = extend_output_to_n_src(model_sb, n_src_new=N_SRC)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_finetune_sepformer7.py", line 142, in extend_output_to_n_src
+    raise RuntimeError(
+RuntimeError: Could not find output head (expected out_dim=3) to extend to 7 sources.

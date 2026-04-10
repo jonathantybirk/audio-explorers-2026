@@ -1,0 +1,43 @@
+Loaded dependency [python3/3.12.11]: sqlite3/3.50.1
+Loaded dependency [python3/3.12.11]: gcc/14.3.0-binutils-2.44
+Loaded module: python3/3.12.11
+
+Loading python3/3.12.11
+  Loading requirement: sqlite3/3.50.1 gcc/14.3.0-binutils-2.44
+Loaded module: cuda/12.6
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1503, in load_library
+    ctypes.CDLL(path)
+  File "/appl9/python/3.12.11/lib/python3.12/ctypes/__init__.py", line 379, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libcudart.so.13: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_finetune_sepformer4.py", line 73, in <module>
+    from speechbrain.inference.separation import SepformerSeparation
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/speechbrain/__init__.py", line 8, in <module>
+    from .core import Brain, Stage, create_experiment_directory
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/speechbrain/core.py", line 40, in <module>
+    from speechbrain.dataio.dataloader import LoopedLoader, SaveableDataLoader
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/speechbrain/dataio/dataloader.py", line 46, in <module>
+    from speechbrain.dataio.dataset import DynamicItemDataset
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/speechbrain/dataio/dataset.py", line 16, in <module>
+    from speechbrain.dataio.dataio import load_data_csv, load_data_json
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/speechbrain/dataio/dataio.py", line 31, in <module>
+    from speechbrain.utils.torch_audio_backend import (
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/speechbrain/utils/torch_audio_backend.py", line 12, in <module>
+    import torchaudio
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/torchaudio/__init__.py", line 7, in <module>
+    from . import _extension  # noqa  # usort: skip
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/torchaudio/_extension/__init__.py", line 30, in <module>
+    _IS_TORCHAUDIO_EXT_AVAILABLE = _load_lib("_torchaudio")
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/torchaudio/_extension/utils.py", line 56, in _load_lib
+    torch.ops.load_library(paths[0])
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/torch/_ops.py", line 1505, in load_library
+    raise OSError(f"Could not load this library: {path}") from e
+OSError: Could not load this library: /zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/torchaudio/lib/_torchaudio.abi3.so

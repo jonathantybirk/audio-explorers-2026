@@ -1,0 +1,53 @@
+Loaded dependency [python3/3.12.11]: sqlite3/3.50.1
+Loaded dependency [python3/3.12.11]: gcc/14.3.0-binutils-2.44
+Loaded module: python3/3.12.11
+
+Loading python3/3.12.11
+  Loading requirement: sqlite3/3.50.1 gcc/14.3.0-binutils-2.44
+[W 2026-04-09 21:41:31,463] Trial 3 failed with parameters: {'stft_size': 2048, 'hop_divisor': 4, 'n_iter': 200, 'n_components': 6} because of the following error: KeyboardInterrupt().
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/optuna/study/_optimize.py", line 206, in _run_trial
+    value_or_values = func(trial)
+                      ^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/ica/hpc_optuna_fastmnmf2.py", line 161, in objective
+    mono = fastmnmf2_separate(data, stft_size, hop_size, n_iter,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/ica/hpc_optuna_fastmnmf2.py", line 90, in fastmnmf2_separate
+    Y_all = pra.bss.fastmnmf2(X, n_src=n_src, n_iter=n_iter,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/pyroomacoustics/bss/fastmnmf2.py", line 166, in fastmnmf2
+    np.einsum("ftij, ft -> fij", XX_FTMM, 1 / Y_FTM[..., m]) / n_frames
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/numpy/_core/einsumfunc.py", line 1610, in einsum
+    return c_einsum(*operands, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+[W 2026-04-09 21:41:31,472] Trial 3 failed with value None.
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/ica/hpc_optuna_fastmnmf2.py", line 184, in <module>
+    study.optimize(make_objective(n_src), n_trials=_args.n_trials,
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/optuna/study/study.py", line 490, in optimize
+    _optimize(
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/optuna/study/_optimize.py", line 68, in _optimize
+    _optimize_sequential(
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/optuna/study/_optimize.py", line 165, in _optimize_sequential
+    frozen_trial_id = _run_trial(study, func, catch)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/optuna/study/_optimize.py", line 263, in _run_trial
+    raise func_err
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/optuna/study/_optimize.py", line 206, in _run_trial
+    value_or_values = func(trial)
+                      ^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/ica/hpc_optuna_fastmnmf2.py", line 161, in objective
+    mono = fastmnmf2_separate(data, stft_size, hop_size, n_iter,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/ica/hpc_optuna_fastmnmf2.py", line 90, in fastmnmf2_separate
+    Y_all = pra.bss.fastmnmf2(X, n_src=n_src, n_iter=n_iter,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/pyroomacoustics/bss/fastmnmf2.py", line 166, in fastmnmf2
+    np.einsum("ftij, ft -> fij", XX_FTMM, 1 / Y_FTM[..., m]) / n_frames
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv/lib/python3.12/site-packages/numpy/_core/einsumfunc.py", line 1610, in einsum
+    return c_einsum(*operands, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

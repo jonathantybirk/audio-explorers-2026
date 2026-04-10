@@ -1,0 +1,18 @@
+=== Downloading LibriSpeech ===
+=== Setting up Python env ===
+=== Generating Libri4Mix (self-contained, no LibriMix metadata required) ===
+train-360 already exists (13000 mixes), skipping.
+
+Generating 3000 dev mixes...
+  /dtu/blackhole/1f/169791/LibriSpeech/dev-clean: 40 speakers, 2703 utterances
+  1000/3000 mixes written
+  2000/3000 mixes written
+  3000/3000 mixes written
+  Done: 3000 mixes in /dtu/blackhole/1f/169791/libri4mix/dev
+
+=== Libri4Mix generation complete ===
+train-360: /dtu/blackhole/1f/169791/libri4mix/train-360/
+dev:       /dtu/blackhole/1f/169791/libri4mix/dev/
+=== Done. Libri4Mix written to /dtu/blackhole/1f/169791/libri4mix ===
+dev
+train-360

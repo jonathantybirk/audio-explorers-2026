@@ -1,0 +1,17 @@
+Loaded dependency [python3/3.12.11]: sqlite3/3.50.1
+Loaded dependency [python3/3.12.11]: gcc/14.3.0-binutils-2.44
+Loaded module: python3/3.12.11
+
+Loading python3/3.12.11
+  Loading requirement: sqlite3/3.50.1 gcc/14.3.0-binutils-2.44
+Loaded module: cuda/12.6
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_train_tfgridnet4.py", line 424, in <module>
+    train(args)
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_train_tfgridnet4.py", line 347, in train
+    train_ds = Libri4MixDataset(args.train_dir, sr=args.sr, max_len_s=args.max_len_s, augment=True)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_train_tfgridnet4.py", line 258, in __init__
+    assert len(self.mix_files) > 0, (
+           ^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: No WAV files found in /work3/s216136/libri4mix/train-360/mix_clean/ — check data path.

@@ -1,0 +1,25 @@
+Loaded dependency [python3/3.12.11]: sqlite3/3.50.1
+Loaded dependency [python3/3.12.11]: gcc/14.3.0-binutils-2.44
+Loaded module: python3/3.12.11
+
+Loading python3/3.12.11
+  Loading requirement: sqlite3/3.50.1 gcc/14.3.0-binutils-2.44
+Traceback (most recent call last):
+  File "<stdin>", line 162, in <module>
+  File "<stdin>", line 137, in generate_split
+  File "<stdin>", line 96, in make_mix_reverb
+  File "<stdin>", line 53, in load_resample
+  File "/dtu/blackhole/1f/169791/.venv_dataprep/lib/python3.12/site-packages/soundfile.py", line 308, in read
+    data = f.read(frames, dtype, always_2d, fill_value, out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dtu/blackhole/1f/169791/.venv_dataprep/lib/python3.12/site-packages/soundfile.py", line 942, in read
+    frames = self._array_io('read', out, frames)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dtu/blackhole/1f/169791/.venv_dataprep/lib/python3.12/site-packages/soundfile.py", line 1394, in _array_io
+    return self._cdata_io(action, cdata, ctype, frames)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dtu/blackhole/1f/169791/.venv_dataprep/lib/python3.12/site-packages/soundfile.py", line 1404, in _cdata_io
+    _error_check(self._errorcode)
+  File "/dtu/blackhole/1f/169791/.venv_dataprep/lib/python3.12/site-packages/soundfile.py", line 1480, in _error_check
+    raise LibsndfileError(err, prefix=prefix)
+soundfile.LibsndfileError: Error : flac decoder lost sync.
