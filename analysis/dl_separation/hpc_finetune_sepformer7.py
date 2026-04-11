@@ -56,6 +56,16 @@ class LoRALinear(nn.Module):
         self.lora_B = nn.Parameter(torch.zeros(r, linear.out_features))
         self.scale  = alpha / r
 
+    # Expose .weight / .bias so nn.MultiheadAttention can access them directly
+    # (MHA bypasses .forward() and calls F.linear(x, out_proj.weight, out_proj.bias))
+    @property
+    def weight(self):
+        return self.linear.weight
+
+    @property
+    def bias(self):
+        return self.linear.bias
+
     def forward(self, x):
         return self.linear(x) + (x @ self.lora_A @ self.lora_B) * self.scale
 
@@ -80,77 +90,55 @@ def freeze_non_lora(model: nn.Module):
 # ── Model surgery ─────────────────────────────────────────────────────────────
 
 def extend_output_to_n_src(model: nn.Module, n_src_new: int) -> nn.Module:
+    """Extend SpeechBrain SepFormer (Dual_Path_Model) from n_src_old to n_src_new.
+
+    In Dual_Path_Model the ONLY layer whose size encodes n_src is:
+        self.conv2d = nn.Conv2d(N, N * num_spks, kernel_size=1)
+    Everything else (output, output_gate, end_conv1x1) operates on
+    [B*spks, N, L] and does not depend on num_spks in its channel count.
+    We tile the conv2d weights and update masknet.num_spks.
+    """
     masknet = model.mods.masknet
-
-    print("\n── SepFormer masknet output layers ──")
-    for name, module in masknet.named_modules():
-        if isinstance(module, (nn.Conv1d, nn.Linear)):
-            out_dim = module.out_channels if isinstance(module, nn.Conv1d) else module.out_features
-            print(f"  {name:60s}  {type(module).__name__}  out={out_dim}")
-    print("─────────────────────────────────────\n")
-
-    n_src_old = getattr(masknet, "num_spks", None)
+    n_src_old = masknet.num_spks
     print(f"  masknet.num_spks = {n_src_old}")
-    if n_src_old is None:
-        n_src_old = 3  # default: wsj03mix base
 
     if n_src_old == n_src_new:
-        print("  num_spks already matches target, no surgery needed.")
+        print("  Already at target n_src, no surgery needed.")
         return model
 
-    extended = 0
-
-    # Strategy 1: look for Conv1d where out_channels is divisible by n_src_old
-    # These are source-output projections (N * n_src_old → N * n_src_new)
-    for name, mod in masknet.named_modules():
-        if isinstance(mod, nn.Conv1d) and mod.out_channels > n_src_old \
-                and mod.out_channels % n_src_old == 0:
-            N = mod.out_channels // n_src_old
-            repeats = -(-n_src_new // n_src_old)
-            new_w = mod.weight.data.repeat(repeats, 1, 1)[: N * n_src_new]
-            mod.out_channels = N * n_src_new
-            mod.weight = nn.Parameter(new_w)
-            if mod.bias is not None:
-                mod.bias = nn.Parameter(
-                    mod.bias.data.repeat(repeats)[: N * n_src_new]
-                )
-            print(f"  [s1] Extended '{name}': {N * n_src_old} → {N * n_src_new}")
-            extended += 1
-
-    # Strategy 2 (fallback): find layers named 'output' and rebuild them,
-    # mapping in_channels → in_channels * n_src_new (reinit, copy what we can)
-    if extended == 0:
-        print("  Strategy 1 found nothing. Falling back to output-name search...")
-        for name, mod in masknet.named_modules():
-            if "output" in name.lower() and isinstance(mod, nn.Conv1d):
-                in_ch = mod.in_channels
-                old_out = mod.out_channels
-                new_out = in_ch * n_src_new
-                new_w = torch.empty(new_out, *mod.weight.shape[1:])
-                nn.init.kaiming_uniform_(new_w, a=0)
-                n_copy = min(old_out, new_out)
-                new_w[:n_copy] = mod.weight.data[:n_copy]
-                mod.out_channels = new_out
-                mod.weight = nn.Parameter(new_w)
-                if mod.bias is not None:
-                    new_b = torch.zeros(new_out)
-                    new_b[:min(len(mod.bias.data), new_out)] = \
-                        mod.bias.data[:min(len(mod.bias.data), new_out)]
-                    mod.bias = nn.Parameter(new_b)
-                print(f"  [s2] Rebuilt '{name}' (in={in_ch}): {old_out} → {new_out}")
-                extended += 1
-
-    if hasattr(masknet, "num_spks"):
-        masknet.num_spks = n_src_new
-        print(f"  Updated masknet.num_spks → {n_src_new}")
-
-    if extended == 0:
+    # Validate conv2d exists and has the expected shape
+    if not hasattr(masknet, "conv2d") or not isinstance(masknet.conv2d, nn.Conv2d):
         raise RuntimeError(
-            f"Could not find any output layers to extend to {n_src_new} sources.\n"
-            f"Dump of masknet: {masknet}"
+            f"Expected masknet.conv2d to be nn.Conv2d, "
+            f"got {type(getattr(masknet, 'conv2d', None))}.\n"
+            f"All masknet modules: {[(n, type(m).__name__) for n, m in masknet.named_modules()]}"
+        )
+    N          = masknet.conv2d.in_channels        # 256
+    old_out    = masknet.conv2d.out_channels       # N * n_src_old = 768
+    expected   = N * n_src_old
+    if old_out != expected:
+        raise RuntimeError(
+            f"conv2d.out_channels={old_out} but expected {expected} "
+            f"(N={N} * n_src_old={n_src_old}). Checkpoint mismatch."
         )
 
-    print(f"  Extended {extended} layer(s) total.")
+    # Tile weights: [N*n_old, N, 1, 1] → [N*n_new, N, 1, 1]
+    repeats = -(-n_src_new // n_src_old)           # ceil div
+    old_w   = masknet.conv2d.weight.data
+    new_w   = old_w.repeat(repeats, 1, 1, 1)[: N * n_src_new]
+
+    has_bias   = masknet.conv2d.bias is not None
+    new_conv2d = nn.Conv2d(N, N * n_src_new, kernel_size=1, bias=has_bias)
+    new_conv2d.weight = nn.Parameter(new_w)
+    if has_bias:
+        new_conv2d.bias = nn.Parameter(
+            masknet.conv2d.bias.data.repeat(repeats)[: N * n_src_new]
+        )
+
+    masknet.conv2d   = new_conv2d
+    masknet.num_spks = n_src_new
+    print(f"  Replaced conv2d: Conv2d({N}, {old_out}) → Conv2d({N}, {N * n_src_new})")
+    print(f"  Updated num_spks: {n_src_old} → {n_src_new}")
     return model
 
 
@@ -218,26 +206,27 @@ class Libri7MixDataset(Dataset):
 # ── Training ──────────────────────────────────────────────────────────────────
 
 def run_model(model_sb, mix, n_src, device):
-    """Forward pass through encoder → masknet → decoder. Returns (B, n_src, T)."""
-    mix = mix.reshape(mix.shape[0], -1)               # ensure exactly (B, T)
-    enc   = model_sb.mods.encoder(mix.unsqueeze(1))   # (B, 1, T) → encoder → (B, N, T')
-    masks = model_sb.mods.masknet(enc)
+    """Forward pass through encoder → masknet → decoder. Returns (B, n_src, T).
 
-    # Handle both mask layout conventions SpeechBrain may emit
-    if masks.dim() == 4 and masks.shape[-1] == n_src:
-        est = torch.stack(
-            [model_sb.mods.decoder(enc * masks[..., s]).squeeze(1) for s in range(n_src)],
-            dim=1,
+    SpeechBrain SepFormer shapes (verified against SB 1.1.0):
+      encoder  : [B, T]          → [B, N, T']   (encoder does unsqueeze internally)
+      masknet  : [B, N, T']      → [n_src, B, N, T']
+      decoder  : [B, N, T']      → [B, T]
+    """
+    mix   = mix.reshape(mix.shape[0], -1)    # [B, T]  (guard against any extra dims)
+    enc   = model_sb.mods.encoder(mix)       # [B, N, T']  — encoder handles unsqueeze
+    masks = model_sb.mods.masknet(enc)       # [n_src, B, N, T']
+
+    if not (masks.dim() == 4 and masks.shape[0] == n_src):
+        raise RuntimeError(
+            f"Unexpected masknet output: shape={tuple(masks.shape)}, "
+            f"expected ({n_src}, B, N, T'). Surgery may have failed."
         )
-    elif masks.dim() == 4 and masks.shape[0] == n_src:
-        est = torch.stack(
-            [model_sb.mods.decoder(enc * masks[s]).squeeze(1) for s in range(n_src)],
-            dim=1,
-        )
-    else:
-        est = model_sb.mods.decoder(masks)
-        if est.dim() == 2:
-            est = est.unsqueeze(1)
+
+    est = torch.stack(
+        [model_sb.mods.decoder(enc * masks[s]) for s in range(n_src)],
+        dim=1,
+    )  # [B, n_src, T]
     return est
 
 
@@ -265,9 +254,9 @@ def train(args):
     print(f"Injected LoRA into {n_lora} Linear layers")
     freeze_non_lora(model_sb.mods)
 
-    if hasattr(model_sb.mods.masknet, "output_layer"):
-        for p in model_sb.mods.masknet.output_layer.parameters():
-            p.requires_grad_(True)
+    # conv2d is the extended output projection — must be trainable (not caught by LoRA)
+    for p in model_sb.mods.masknet.conv2d.parameters():
+        p.requires_grad_(True)
 
     trainable = sum(p.numel() for p in model_sb.mods.parameters() if p.requires_grad)
     total     = sum(p.numel() for p in model_sb.mods.parameters())
@@ -298,7 +287,10 @@ def train(args):
         _sm_est = _sm_est[..., :_sm_T]
         if _sm_est.shape[-1] < _sm_T:
             _sm_est = torch.nn.functional.pad(_sm_est, (0, _sm_T - _sm_est.shape[-1]))
-        _sm_loss = get_si_snr_with_pitwrapper(_sm_est, _sm_src)
+        # PIT loss expects [B, T, C] — permute from [B, n_src, T]
+        _sm_loss = get_si_snr_with_pitwrapper(
+            _sm_src.permute(0, 2, 1), _sm_est.permute(0, 2, 1)
+        ).mean()
         _sm_loss.backward()
         print(f"  loss={_sm_loss.item():.3f}  backward OK")
     except Exception as _e:
@@ -351,7 +343,10 @@ def train(args):
             est = est[..., :T]
             if est.shape[-1] < T:
                 est = torch.nn.functional.pad(est, (0, T - est.shape[-1]))
-            loss = get_si_snr_with_pitwrapper(est, sources)
+            # PIT loss expects [B, T, C]; returns [B] — take mean
+            loss = get_si_snr_with_pitwrapper(
+                sources.permute(0, 2, 1), est.permute(0, 2, 1)
+            ).mean()
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(
@@ -371,7 +366,9 @@ def train(args):
                 est = est[..., :T]
                 if est.shape[-1] < T:
                     est = torch.nn.functional.pad(est, (0, T - est.shape[-1]))
-                val_loss += get_si_snr_with_pitwrapper(est, sources).item()
+                val_loss += get_si_snr_with_pitwrapper(
+                    sources.permute(0, 2, 1), est.permute(0, 2, 1)
+                ).mean().item()
         val_loss /= len(val_dl)
         scheduler.step()
 

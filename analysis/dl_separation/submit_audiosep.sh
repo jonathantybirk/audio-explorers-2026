@@ -51,7 +51,7 @@ if [ ! -d "$AUDIOSEP_DIR" ]; then
     }
 fi
 # Install AudioSep's dependencies
-pip install --quiet transformers huggingface_hub peft librosa soundfile laion-clap
+pip install --quiet transformers huggingface_hub peft librosa soundfile laion-clap scipy
 
 # Install anything in the repo's own requirements.txt
 if [ -f "$AUDIOSEP_DIR/requirements.txt" ]; then
