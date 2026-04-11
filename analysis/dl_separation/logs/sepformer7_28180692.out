@@ -1,0 +1,138 @@
+Fri Apr 10 16:49:14 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.58.03              Driver Version: 595.58.03      CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-PCIE-40GB          On  |   00000000:37:00.0 Off |                    0 |
+| N/A   33C    P0             33W /  250W |       0MiB /  40960MiB |      0%   E. Process |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Device: cuda
+Base model: speechbrain/sepformer-wsj03mix  (base n_src=3)
+
+Loading speechbrain/sepformer-wsj03mix ...
+
+Extending output head 3 → 7 sources ...
+
+── SepFormer masknet output layers ──
+  conv1d                                                        Conv1d  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.0.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.0.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.0.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.1.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.1.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.1.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.2.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.2.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.2.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.3.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.3.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.3.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.4.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.4.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.4.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.5.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.5.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.5.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.6.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.6.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.6.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.7.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.intra_mdl.mdl.layers.7.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.intra_mdl.mdl.layers.7.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.0.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.0.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.0.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.1.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.1.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.1.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.2.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.2.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.2.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.3.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.3.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.3.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.4.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.4.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.4.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.5.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.5.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.5.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.6.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.6.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.6.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.7.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.0.inter_mdl.mdl.layers.7.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.0.inter_mdl.mdl.layers.7.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.0.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.0.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.0.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.1.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.1.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.1.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.2.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.2.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.2.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.3.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.3.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.3.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.4.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.4.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.4.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.5.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.5.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.5.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.6.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.6.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.6.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.7.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.intra_mdl.mdl.layers.7.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.intra_mdl.mdl.layers.7.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.0.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.0.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.0.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.1.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.1.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.1.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.2.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.2.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.2.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.3.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.3.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.3.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.4.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.4.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.4.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.5.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.5.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.5.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.6.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.6.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.6.pos_ffn.ffn.3               Linear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.7.self_att.att.out_proj       NonDynamicallyQuantizableLinear  out=256
+  dual_mdl.1.inter_mdl.mdl.layers.7.pos_ffn.ffn.0               Linear  out=1024
+  dual_mdl.1.inter_mdl.mdl.layers.7.pos_ffn.ffn.3               Linear  out=256
+  end_conv1x1                                                   Conv1d  out=256
+  output.0                                                      Conv1d  out=256
+  output_gate.0                                                 Conv1d  out=256
+─────────────────────────────────────
+
+  masknet.num_spks = 3
+  Strategy 1 found nothing. Falling back to output-name search...
+  [s2] Rebuilt 'output.0' (in=256): 256 → 1792
+  [s2] Rebuilt 'output_gate.0' (in=256): 256 → 1792
+  Updated masknet.num_spks → 7
+  Extended 2 layer(s) total.
+Injected LoRA into 96 Linear layers
+Trainable: 786,432 / 27,321,089  (2.9%)

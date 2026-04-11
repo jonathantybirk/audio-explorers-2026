@@ -1,0 +1,8 @@
+{
+  "stft_size": 2048,
+  "n_iter": 180,
+  "n_components": 6,
+  "n_src": 7,
+  "hop_size": 1024,
+  "best_cross_corr": 0.9297996075561353
+}

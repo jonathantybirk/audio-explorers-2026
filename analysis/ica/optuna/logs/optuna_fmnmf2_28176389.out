@@ -106,3 +106,118 @@ Loading DONT-TOUCH/Software Case/mixture.wav ...
   trial 48: cross-corr=0.6884
   trial 49: stft=1024 hop=256 iter=270 n_comp=12
   trial 49: cross-corr=0.7425
+
+  Best params (cross-corr 0.3729):
+    stft_size: 2048
+    n_iter: 240
+    n_components: 6
+    n_src: 5
+    hop_size: 256
+    best_cross_corr: 0.3728522471308354
+  Saved → analysis/ica/optuna/best_params_nsrc5.json
+
+  Running final separation with best params ...
+  saved  analysis/ica/separated/mixture_fmnmf2_opt_n5_source_1_180deg.wav
+  saved  analysis/ica/separated/mixture_fmnmf2_opt_n5_source_2_313deg.wav
+  saved  analysis/ica/separated/mixture_fmnmf2_opt_n5_source_3_356deg.wav
+  saved  analysis/ica/separated/mixture_fmnmf2_opt_n5_source_4_90deg.wav
+  saved  analysis/ica/separated/mixture_fmnmf2_opt_n5_source_5_90deg.wav
+
+======================================================================
+  Optimising n_src=6  (50 trials, 1 workers)
+======================================================================
+  trial 0: stft=2048 hop=1024 iter=40 n_comp=16
+  trial 0: cross-corr=1.5439
+  trial 1: stft=2048 hop=1024 iter=80 n_comp=6
+  trial 1: cross-corr=1.1669
+  trial 2: stft=2048 hop=512 iter=110 n_comp=8
+  trial 2: cross-corr=0.9692
+  trial 3: stft=2048 hop=512 iter=200 n_comp=6
+  trial 3: cross-corr=0.7205
+  trial 4: stft=4096 hop=2048 iter=220 n_comp=10
+  trial 4: cross-corr=0.8157
+  trial 5: stft=2048 hop=1024 iter=110 n_comp=10
+  trial 5: cross-corr=1.0304
+  trial 6: stft=4096 hop=1024 iter=190 n_comp=16
+  trial 6: cross-corr=0.9087
+  trial 7: stft=2048 hop=512 iter=260 n_comp=8
+  trial 7: cross-corr=1.1516
+  trial 8: stft=2048 hop=256 iter=240 n_comp=6
+  trial 8: cross-corr=1.0403
+  trial 9: stft=2048 hop=512 iter=130 n_comp=4
+  trial 9: cross-corr=0.8938
+  trial 10: stft=1024 hop=128 iter=300 n_comp=12
+  trial 10: cross-corr=0.8338
+  trial 11: stft=4096 hop=2048 iter=190 n_comp=12
+  trial 11: cross-corr=0.7416
+  trial 12: stft=4096 hop=2048 iter=170 n_comp=12
+  trial 12: cross-corr=1.1024
+  trial 13: stft=1024 hop=256 iter=200 n_comp=14
+  trial 13: cross-corr=1.0667
+  trial 14: stft=4096 hop=512 iter=150 n_comp=4
+  trial 14: cross-corr=1.3391
+  trial 15: stft=4096 hop=1024 iter=270 n_comp=12
+  trial 15: cross-corr=0.8729
+  trial 16: stft=1024 hop=512 iter=170 n_comp=8
+  trial 16: cross-corr=0.9543
+  trial 17: stft=4096 hop=2048 iter=220 n_comp=14
+  trial 17: cross-corr=0.7139
+  trial 18: stft=4096 hop=1024 iter=230 n_comp=14
+  trial 18: cross-corr=0.9351
+  trial 19: stft=1024 hop=128 iter=300 n_comp=6
+  trial 19: cross-corr=0.9905
+  trial 20: stft=4096 hop=1024 iter=260 n_comp=14
+  trial 20: cross-corr=1.1850
+  trial 21: stft=4096 hop=2048 iter=210 n_comp=12
+  trial 21: cross-corr=0.7750
+  trial 22: stft=4096 hop=2048 iter=190 n_comp=14
+  trial 22: cross-corr=0.7299
+  trial 23: stft=4096 hop=2048 iter=160 n_comp=14
+  trial 23: cross-corr=0.9048
+  trial 24: stft=4096 hop=2048 iter=240 n_comp=16
+  trial 24: cross-corr=0.7549
+  trial 25: stft=2048 hop=1024 iter=200 n_comp=10
+  trial 25: cross-corr=0.7430
+  trial 26: stft=4096 hop=2048 iter=180 n_comp=14
+  trial 26: cross-corr=0.9411
+  trial 27: stft=4096 hop=2048 iter=150 n_comp=16
+  trial 27: cross-corr=0.9906
+  trial 28: stft=1024 hop=128 iter=130 n_comp=10
+  trial 28: cross-corr=1.1735
+  trial 29: stft=2048 hop=512 iter=280 n_comp=16
+  trial 29: cross-corr=0.8734
+  trial 30: stft=2048 hop=1024 iter=30 n_comp=4
+  trial 30: cross-corr=2.8706
+  trial 31: stft=4096 hop=2048 iter=220 n_comp=12
+  trial 31: cross-corr=0.6767
+  trial 32: stft=4096 hop=2048 iter=220 n_comp=14
+  trial 32: cross-corr=0.7568
+  trial 33: stft=4096 hop=2048 iter=240 n_comp=12
+  trial 33: cross-corr=0.8516
+  trial 34: stft=4096 hop=2048 iter=60 n_comp=14
+  trial 34: cross-corr=1.3184
+  trial 35: stft=2048 hop=1024 iter=210 n_comp=10
+  trial 35: cross-corr=0.9497
+  trial 36: stft=4096 hop=2048 iter=220 n_comp=8
+  trial 36: cross-corr=0.8961
+  trial 37: stft=2048 hop=512 iter=190 n_comp=16
+  trial 37: cross-corr=1.0902
+  trial 38: stft=4096 hop=2048 iter=250 n_comp=12
+  trial 38: cross-corr=0.7327
+  trial 39: stft=2048 hop=512 iter=230 n_comp=14
+  trial 39: cross-corr=0.9976
+  trial 40: stft=4096 hop=2048 iter=120 n_comp=6
+  trial 40: cross-corr=1.0460
+  trial 41: stft=4096 hop=2048 iter=260 n_comp=12
+  trial 41: cross-corr=0.8788
+  trial 42: stft=4096 hop=2048 iter=240 n_comp=12
+  trial 42: cross-corr=0.8819
+  trial 43: stft=4096 hop=2048 iter=280 n_comp=10
+  trial 43: cross-corr=0.7061
+  trial 44: stft=4096 hop=2048 iter=280 n_comp=8
+  trial 44: cross-corr=0.8318
+  trial 45: stft=4096 hop=512 iter=180 n_comp=10
+  trial 45: cross-corr=0.7924
+  trial 46: stft=2048 hop=1024 iter=200 n_comp=6
+  trial 46: cross-corr=0.6676
+  trial 47: stft=2048 hop=512 iter=210 n_comp=6
