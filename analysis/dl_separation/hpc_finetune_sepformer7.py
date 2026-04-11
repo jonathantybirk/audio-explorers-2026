@@ -219,7 +219,8 @@ class Libri7MixDataset(Dataset):
 
 def run_model(model_sb, mix, n_src, device):
     """Forward pass through encoder → masknet → decoder. Returns (B, n_src, T)."""
-    enc   = model_sb.mods.encoder(mix.unsqueeze(1))   # (B, N, T')
+    mix = mix.reshape(mix.shape[0], -1)               # ensure exactly (B, T)
+    enc   = model_sb.mods.encoder(mix.unsqueeze(1))   # (B, 1, T) → encoder → (B, N, T')
     masks = model_sb.mods.masknet(enc)
 
     # Handle both mask layout conventions SpeechBrain may emit
