@@ -280,6 +280,36 @@ def train(args):
     )
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
+    # ── Smoke test: fail fast before touching data ────────────────────────────
+    print("\n── Smoke test: one forward pass + PIT loss on random tensors ──")
+    model_sb.mods.train()
+    _T = int(args.sr * args.max_len_s)
+    _B = 2
+    _sm_mix = torch.randn(_B, _T, device=device)
+    _sm_mix /= _sm_mix.abs().max() + 1e-8
+    _sm_src = torch.randn(_B, N_SRC, _T, device=device)
+    _sm_src /= _sm_src.abs().max() + 1e-8
+    try:
+        _sm_est = run_model(model_sb, _sm_mix, N_SRC, device)
+        print(f"  model output shape: {tuple(_sm_est.shape)}  (expected [B={_B}, N_SRC={N_SRC}, T={_T}])")
+        assert _sm_est.ndim == 3, f"Expected 3D output (B,N,T), got {_sm_est.shape}"
+        assert _sm_est.shape[1] == N_SRC, f"Expected {N_SRC} sources, got {_sm_est.shape[1]}"
+        _sm_T = _sm_src.shape[-1]
+        _sm_est = _sm_est[..., :_sm_T]
+        if _sm_est.shape[-1] < _sm_T:
+            _sm_est = torch.nn.functional.pad(_sm_est, (0, _sm_T - _sm_est.shape[-1]))
+        _sm_loss = get_si_snr_with_pitwrapper(_sm_est, _sm_src)
+        _sm_loss.backward()
+        print(f"  loss={_sm_loss.item():.3f}  backward OK")
+    except Exception as _e:
+        print(f"SMOKE TEST FAILED: {_e}", flush=True)
+        import traceback; traceback.print_exc()
+        raise SystemExit(1) from _e
+    print("── Smoke test passed ──\n")
+    optimizer.zero_grad()
+    del _sm_mix, _sm_src, _sm_est, _sm_loss
+    # ─────────────────────────────────────────────────────────────────────────
+
     full_ds = Libri7MixDataset(args.train_dir, sr=args.sr, max_len_s=args.max_len_s)
 
     val_dl = None

@@ -61,7 +61,7 @@ sf.write(mono_path, mono_mix, sr)
 
 # ── AudioSep ──────────────────────────────────────────────────────────────────
 print("\nLoading AudioSep model ...")
-from audiosep import AudioSep
+from pipeline import AudioSep
 model = AudioSep.from_pretrained("audo/AudioSep", device=_args.device)
 
 # Queries: vary slightly to encourage different outputs

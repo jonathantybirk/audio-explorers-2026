@@ -50,13 +50,23 @@ if [ ! -d "$AUDIOSEP_DIR" ]; then
         echo "ERROR: git clone of AudioSep failed." >&2; exit 1
     }
 fi
-# Install its dependencies (transformers, huggingface_hub, etc.)
-pip install --quiet transformers huggingface_hub peft
+# Install AudioSep's dependencies
+pip install --quiet transformers huggingface_hub peft librosa soundfile laion-clap
+
+# Install anything in the repo's own requirements.txt
+if [ -f "$AUDIOSEP_DIR/requirements.txt" ]; then
+    pip install --quiet -r "$AUDIOSEP_DIR/requirements.txt"
+fi
+
 export PYTHONPATH="$AUDIOSEP_DIR:$PYTHONPATH"
 
-if ! python3 -c "from audiosep import AudioSep" 2>/dev/null; then
+# AudioSep class lives in pipeline.py, NOT an audiosep package
+if ! python3 -c "from pipeline import AudioSep" 2>/dev/null; then
     echo "ERROR: AudioSep import still fails after clone. Check $AUDIOSEP_DIR." >&2
-    ls "$AUDIOSEP_DIR"
+    echo "Contents of $AUDIOSEP_DIR:" >&2
+    ls "$AUDIOSEP_DIR" >&2
+    echo "Python path: $PYTHONPATH" >&2
+    python3 -c "from pipeline import AudioSep" >&2  # print the actual error
     exit 1
 fi
 echo "AudioSep import OK"
