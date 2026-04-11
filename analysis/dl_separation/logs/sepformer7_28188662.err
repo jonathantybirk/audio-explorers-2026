@@ -1,0 +1,39 @@
+Loaded dependency [python3/3.12.11]: sqlite3/3.50.1
+Loaded dependency [python3/3.12.11]: gcc/14.3.0-binutils-2.44
+Loaded module: python3/3.12.11
+
+Loading python3/3.12.11
+  Loading requirement: sqlite3/3.50.1 gcc/14.3.0-binutils-2.44
+Loaded module: cuda/12.6
+Could not parse CUDA device string 'cuda': not enough values to unpack (expected 2, got 1). Falling back to device 0.
+Traceback (most recent call last):
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_finetune_sepformer7.py", line 382, in <module>
+    train(args)
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_finetune_sepformer7.py", line 318, in train
+    est = run_model(model_sb, mix, N_SRC, device)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/analysis/dl_separation/hpc_finetune_sepformer7.py", line 222, in run_model
+    enc   = model_sb.mods.encoder(mix.unsqueeze(1))   # (B, N, T')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv_gpu/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv_gpu/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv_gpu/lib/python3.12/site-packages/speechbrain/lobes/models/dual_path.py", line 230, in forward
+    x = self.conv1d(x)
+        ^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv_gpu/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv_gpu/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv_gpu/lib/python3.12/site-packages/torch/nn/modules/conv.py", line 375, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/zhome/53/3/169791/audio-explorers-2026/.venv_gpu/lib/python3.12/site-packages/torch/nn/modules/conv.py", line 370, in _conv_forward
+    return F.conv1d(
+           ^^^^^^^^^
+RuntimeError: Expected 2D (unbatched) or 3D (batched) input to conv1d, but got input of size: [8, 1, 1, 64000]

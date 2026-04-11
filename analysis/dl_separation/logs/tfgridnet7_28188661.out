@@ -1,0 +1,241 @@
+Sat Apr 11 13:51:28 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.58.03              Driver Version: 595.58.03      CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-PCIE-40GB          On  |   00000000:37:00.0 Off |                    0 |
+| N/A   30C    P0             30W /  250W |       0MiB /  40960MiB |      0%   E. Process |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+=== TF-GridNet 7-source training ===
+Device: cuda
+Model params: 1,558,462 (trainable: 1,558,462)
+  1718 mixes in /dtu/blackhole/1f/169791/libri7mix/train-360
+  val-dir '/dtu/blackhole/1f/169791/libri7mix/dev' is empty — falling back to 90/10 split
+  Train/val split: 1547/171
+  epoch 1 step 100/386  loss 26.601
+  epoch 1 step 200/386  loss 25.487
+  epoch 1 step 300/386  loss 23.991
+Epoch   1/50  train SI-SNRi -22.79 dB  val SI-SNRi -18.14 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -18.14 dB
+  epoch 2 step 100/386  loss 17.619
+  epoch 2 step 200/386  loss 17.512
+  epoch 2 step 300/386  loss 17.425
+Epoch   2/50  train SI-SNRi -17.33 dB  val SI-SNRi -17.02 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -17.02 dB
+  epoch 3 step 100/386  loss 16.691
+  epoch 3 step 200/386  loss 16.779
+  epoch 3 step 300/386  loss 16.657
+Epoch   3/50  train SI-SNRi -16.62 dB  val SI-SNRi -16.40 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -16.40 dB
+  epoch 4 step 100/386  loss 16.193
+  epoch 4 step 200/386  loss 16.239
+  epoch 4 step 300/386  loss 16.234
+Epoch   4/50  train SI-SNRi -16.25 dB  val SI-SNRi -16.21 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -16.21 dB
+  epoch 5 step 100/386  loss 16.120
+  epoch 5 step 200/386  loss 16.069
+  epoch 5 step 300/386  loss 16.128
+Epoch   5/50  train SI-SNRi -16.12 dB  val SI-SNRi -16.11 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -16.11 dB
+  epoch 6 step 100/386  loss 16.006
+  epoch 6 step 200/386  loss 15.977
+  epoch 6 step 300/386  loss 15.954
+Epoch   6/50  train SI-SNRi -15.92 dB  val SI-SNRi -15.82 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -15.82 dB
+  epoch 7 step 100/386  loss 15.748
+  epoch 7 step 200/386  loss 15.712
+  epoch 7 step 300/386  loss 15.702
+Epoch   7/50  train SI-SNRi -15.73 dB  val SI-SNRi -15.80 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -15.80 dB
+  epoch 8 step 100/386  loss 15.582
+  epoch 8 step 200/386  loss 15.608
+  epoch 8 step 300/386  loss 15.577
+Epoch   8/50  train SI-SNRi -15.62 dB  val SI-SNRi -15.67 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -15.67 dB
+  epoch 9 step 100/386  loss 15.585
+  epoch 9 step 200/386  loss 15.526
+  epoch 9 step 300/386  loss 15.557
+Epoch   9/50  train SI-SNRi -15.56 dB  val SI-SNRi -15.54 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -15.54 dB
+  epoch 10 step 100/386  loss 15.373
+  epoch 10 step 200/386  loss 15.482
+  epoch 10 step 300/386  loss 15.495
+Epoch  10/50  train SI-SNRi -15.48 dB  val SI-SNRi -15.54 dB  lr 1.00e-03
+  epoch 11 step 100/386  loss 15.328
+  epoch 11 step 200/386  loss 15.342
+  epoch 11 step 300/386  loss 15.401
+Epoch  11/50  train SI-SNRi -15.44 dB  val SI-SNRi -15.54 dB  lr 1.00e-03
+  epoch 12 step 100/386  loss 15.321
+  epoch 12 step 200/386  loss 15.369
+  epoch 12 step 300/386  loss 15.377
+Epoch  12/50  train SI-SNRi -15.36 dB  val SI-SNRi -15.49 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -15.49 dB
+  epoch 13 step 100/386  loss 15.457
+  epoch 13 step 200/386  loss 15.408
+  epoch 13 step 300/386  loss 15.374
+Epoch  13/50  train SI-SNRi -15.34 dB  val SI-SNRi -15.50 dB  lr 1.00e-03
+  epoch 14 step 100/386  loss 15.269
+  epoch 14 step 200/386  loss 15.218
+  epoch 14 step 300/386  loss 15.236
+Epoch  14/50  train SI-SNRi -15.24 dB  val SI-SNRi -15.46 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -15.46 dB
+  epoch 15 step 100/386  loss 15.120
+  epoch 15 step 200/386  loss 15.204
+  epoch 15 step 300/386  loss 15.200
+Epoch  15/50  train SI-SNRi -15.18 dB  val SI-SNRi -15.49 dB  lr 1.00e-03
+  epoch 16 step 100/386  loss 15.129
+  epoch 16 step 200/386  loss 15.063
+  epoch 16 step 300/386  loss 15.080
+Epoch  16/50  train SI-SNRi -15.11 dB  val SI-SNRi -15.52 dB  lr 1.00e-03
+  epoch 17 step 100/386  loss 15.079
+  epoch 17 step 200/386  loss 15.111
+  epoch 17 step 300/386  loss 15.081
+Epoch  17/50  train SI-SNRi -15.05 dB  val SI-SNRi -15.39 dB  lr 1.00e-03
+  → Saved checkpoint  val SI-SNRi -15.39 dB
+  epoch 18 step 100/386  loss 14.883
+  epoch 18 step 200/386  loss 14.988
+  epoch 18 step 300/386  loss 14.970
+Epoch  18/50  train SI-SNRi -14.96 dB  val SI-SNRi -15.41 dB  lr 1.00e-03
+  epoch 19 step 100/386  loss 14.848
+  epoch 19 step 200/386  loss 14.818
+  epoch 19 step 300/386  loss 14.819
+Epoch  19/50  train SI-SNRi -14.86 dB  val SI-SNRi -15.42 dB  lr 1.00e-03
+  epoch 20 step 100/386  loss 14.761
+  epoch 20 step 200/386  loss 14.735
+  epoch 20 step 300/386  loss 14.741
+Epoch  20/50  train SI-SNRi -14.76 dB  val SI-SNRi -15.43 dB  lr 1.00e-03
+  epoch 21 step 100/386  loss 14.592
+  epoch 21 step 200/386  loss 14.637
+  epoch 21 step 300/386  loss 14.619
+Epoch  21/50  train SI-SNRi -14.66 dB  val SI-SNRi -15.48 dB  lr 1.00e-03
+  epoch 22 step 100/386  loss 14.431
+  epoch 22 step 200/386  loss 14.484
+  epoch 22 step 300/386  loss 14.553
+Epoch  22/50  train SI-SNRi -14.54 dB  val SI-SNRi -15.49 dB  lr 1.00e-03
+  epoch 23 step 100/386  loss 14.230
+  epoch 23 step 200/386  loss 14.364
+  epoch 23 step 300/386  loss 14.427
+Epoch  23/50  train SI-SNRi -14.42 dB  val SI-SNRi -15.53 dB  lr 5.00e-04
+  epoch 24 step 100/386  loss 14.119
+  epoch 24 step 200/386  loss 14.058
+  epoch 24 step 300/386  loss 14.081
+Epoch  24/50  train SI-SNRi -14.10 dB  val SI-SNRi -15.59 dB  lr 5.00e-04
+  epoch 25 step 100/386  loss 13.937
+  epoch 25 step 200/386  loss 13.959
+  epoch 25 step 300/386  loss 13.971
+Epoch  25/50  train SI-SNRi -13.96 dB  val SI-SNRi -15.61 dB  lr 5.00e-04
+  epoch 26 step 100/386  loss 13.851
+  epoch 26 step 200/386  loss 13.856
+  epoch 26 step 300/386  loss 13.819
+Epoch  26/50  train SI-SNRi -13.84 dB  val SI-SNRi -15.62 dB  lr 5.00e-04
+  epoch 27 step 100/386  loss 13.540
+  epoch 27 step 200/386  loss 13.588
+  epoch 27 step 300/386  loss 13.659
+Epoch  27/50  train SI-SNRi -13.70 dB  val SI-SNRi -15.84 dB  lr 5.00e-04
+  epoch 28 step 100/386  loss 13.664
+  epoch 28 step 200/386  loss 13.619
+  epoch 28 step 300/386  loss 13.556
+Epoch  28/50  train SI-SNRi -13.58 dB  val SI-SNRi -15.80 dB  lr 5.00e-04
+  epoch 29 step 100/386  loss 13.410
+  epoch 29 step 200/386  loss 13.441
+  epoch 29 step 300/386  loss 13.422
+Epoch  29/50  train SI-SNRi -13.44 dB  val SI-SNRi -15.82 dB  lr 2.50e-04
+  epoch 30 step 100/386  loss 13.119
+  epoch 30 step 200/386  loss 13.148
+  epoch 30 step 300/386  loss 13.172
+Epoch  30/50  train SI-SNRi -13.18 dB  val SI-SNRi -16.01 dB  lr 2.50e-04
+  epoch 31 step 100/386  loss 12.951
+  epoch 31 step 200/386  loss 13.000
+  epoch 31 step 300/386  loss 13.075
+Epoch  31/50  train SI-SNRi -13.08 dB  val SI-SNRi -16.06 dB  lr 2.50e-04
+  epoch 32 step 100/386  loss 12.941
+  epoch 32 step 200/386  loss 12.942
+  epoch 32 step 300/386  loss 12.973
+Epoch  32/50  train SI-SNRi -12.98 dB  val SI-SNRi -16.09 dB  lr 2.50e-04
+  epoch 33 step 100/386  loss 12.768
+  epoch 33 step 200/386  loss 12.810
+  epoch 33 step 300/386  loss 12.868
+Epoch  33/50  train SI-SNRi -12.89 dB  val SI-SNRi -16.20 dB  lr 2.50e-04
+  epoch 34 step 100/386  loss 12.778
+  epoch 34 step 200/386  loss 12.801
+  epoch 34 step 300/386  loss 12.810
+Epoch  34/50  train SI-SNRi -12.80 dB  val SI-SNRi -16.15 dB  lr 2.50e-04
+  epoch 35 step 100/386  loss 12.770
+  epoch 35 step 200/386  loss 12.713
+  epoch 35 step 300/386  loss 12.676
+Epoch  35/50  train SI-SNRi -12.71 dB  val SI-SNRi -16.25 dB  lr 1.25e-04
+  epoch 36 step 100/386  loss 12.577
+  epoch 36 step 200/386  loss 12.588
+  epoch 36 step 300/386  loss 12.572
+Epoch  36/50  train SI-SNRi -12.55 dB  val SI-SNRi -16.35 dB  lr 1.25e-04
+  epoch 37 step 100/386  loss 12.567
+  epoch 37 step 200/386  loss 12.510
+  epoch 37 step 300/386  loss 12.486
+Epoch  37/50  train SI-SNRi -12.49 dB  val SI-SNRi -16.40 dB  lr 1.25e-04
+  epoch 38 step 100/386  loss 12.483
+  epoch 38 step 200/386  loss 12.458
+  epoch 38 step 300/386  loss 12.427
+Epoch  38/50  train SI-SNRi -12.44 dB  val SI-SNRi -16.41 dB  lr 1.25e-04
+  epoch 39 step 100/386  loss 12.465
+  epoch 39 step 200/386  loss 12.428
+  epoch 39 step 300/386  loss 12.414
+Epoch  39/50  train SI-SNRi -12.39 dB  val SI-SNRi -16.45 dB  lr 1.25e-04
+  epoch 40 step 100/386  loss 12.294
+  epoch 40 step 200/386  loss 12.313
+  epoch 40 step 300/386  loss 12.311
+Epoch  40/50  train SI-SNRi -12.34 dB  val SI-SNRi -16.56 dB  lr 1.25e-04
+  epoch 41 step 100/386  loss 12.211
+  epoch 41 step 200/386  loss 12.215
+  epoch 41 step 300/386  loss 12.260
+Epoch  41/50  train SI-SNRi -12.28 dB  val SI-SNRi -16.52 dB  lr 6.25e-05
+  epoch 42 step 100/386  loss 12.158
+  epoch 42 step 200/386  loss 12.125
+  epoch 42 step 300/386  loss 12.178
+Epoch  42/50  train SI-SNRi -12.20 dB  val SI-SNRi -16.57 dB  lr 6.25e-05
+  epoch 43 step 100/386  loss 12.137
+  epoch 43 step 200/386  loss 12.179
+  epoch 43 step 300/386  loss 12.171
+Epoch  43/50  train SI-SNRi -12.17 dB  val SI-SNRi -16.63 dB  lr 6.25e-05
+  epoch 44 step 100/386  loss 12.212
+  epoch 44 step 200/386  loss 12.155
+  epoch 44 step 300/386  loss 12.153
+Epoch  44/50  train SI-SNRi -12.14 dB  val SI-SNRi -16.61 dB  lr 6.25e-05
+  epoch 45 step 100/386  loss 12.026
+  epoch 45 step 200/386  loss 12.075
+  epoch 45 step 300/386  loss 12.091
+Epoch  45/50  train SI-SNRi -12.11 dB  val SI-SNRi -16.65 dB  lr 6.25e-05
+  epoch 46 step 100/386  loss 12.015
+  epoch 46 step 200/386  loss 12.048
+  epoch 46 step 300/386  loss 12.076
+Epoch  46/50  train SI-SNRi -12.09 dB  val SI-SNRi -16.67 dB  lr 6.25e-05
+  epoch 47 step 100/386  loss 12.072
+  epoch 47 step 200/386  loss 12.089
+  epoch 47 step 300/386  loss 12.065
+Epoch  47/50  train SI-SNRi -12.06 dB  val SI-SNRi -16.73 dB  lr 3.13e-05
+  epoch 48 step 100/386  loss 11.909
+  epoch 48 step 200/386  loss 11.987
+  epoch 48 step 300/386  loss 12.000
+Epoch  48/50  train SI-SNRi -12.01 dB  val SI-SNRi -16.71 dB  lr 3.13e-05
+  epoch 49 step 100/386  loss 11.974
+  epoch 49 step 200/386  loss 12.019
+  epoch 49 step 300/386  loss 12.029
+Epoch  49/50  train SI-SNRi -12.00 dB  val SI-SNRi -16.72 dB  lr 3.13e-05
+  epoch 50 step 100/386  loss 12.014
+  epoch 50 step 200/386  loss 12.006
+  epoch 50 step 300/386  loss 12.004
+Epoch  50/50  train SI-SNRi -11.98 dB  val SI-SNRi -16.76 dB  lr 3.13e-05
+
+Done. Best val SI-SNRi: -15.39 dB
+=== Done ===

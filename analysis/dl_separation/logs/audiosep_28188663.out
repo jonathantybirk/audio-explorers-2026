@@ -1,0 +1,22 @@
+Cloning AudioSep...
+AudioSep_Colab.ipynb
+CONTRIBUTING.md
+LICENSE
+README.md
+assets
+benchmark.py
+callbacks
+cog.yaml
+config
+data
+datafiles
+environment.yml
+environment_win64.yaml
+evaluation
+losses.py
+models
+optimizers
+pipeline.py
+predict.py
+train.py
+utils.py
