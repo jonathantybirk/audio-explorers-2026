@@ -144,6 +144,7 @@
     .badge.sflibri  { background: #ede9fe; color: #5b21b6; }
     .badge.ctlibri  { background: #fce7f3; color: #9d174d; }
     .badge.dprnn    { background: #fdf4ff; color: #86198f; }
+    .badge.fmnmf2   { background: #cffafe; color: #155e75; }
 
     /* ── Right panel ────────────────────────────────────── */
     .right { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
@@ -184,10 +185,10 @@
         <h1>Demo</h1>
       </div>
       <div class="tabs">
-        <button class="tab active" id="tab-example" onclick="switchRecording('example')">
+        <button class="tab" id="tab-example" onclick="switchRecording('example')">
           example_mixture.wav <span class="tab-badge">known positions</span>
         </button>
-        <button class="tab" id="tab-mixture" onclick="switchRecording('mixture')">
+        <button class="tab active" id="tab-mixture" onclick="switchRecording('mixture')">
           mixture.wav <span class="tab-badge">estimated positions</span>
         </button>
       </div>
@@ -229,6 +230,7 @@
           <span><span class="dot" style="background:#86198f"></span> DPRNN</span>
           <span><span class="dot" style="background:#0e7490"></span> SepFormer 4-src</span>
           <span><span class="dot" style="background:#15803d"></span> ICA + Enhancement</span>
+          <span><span class="dot" style="background:#155e75"></span> FastMNMF2</span>
         </div>
         <div class="polar-wrap">
           <h3 id="polar-title"></h3>
@@ -274,10 +276,7 @@
         { key: "auxiva_opt",    header: "AuxIVA Optuna ★ (mixture)",     secDefault: true  },
         { key: "ilrma",         header: "ILRMA (default)",               secDefault: false },
         { key: "ilrma_tuned",   header: "ILRMA (hp from example)",       secDefault: false },
-        { key: "fmnmf2_tuned",  header: "FastMNMF2 n=5 (hand-picked hp)",secDefault: false },
-        { key: "fmnmf2_n6",     header: "FastMNMF2 n=6",                 secDefault: false },
-        { key: "fmnmf2_n7",     header: "FastMNMF2 n=7",                 secDefault: false },
-        { key: "fmnmf2_n8",     header: "FastMNMF2 n=8",                 secDefault: false },
+        { key: "fmnmf2_tuned",  header: "FastMNMF2 n=5 (hand-picked hp)",   secDefault: false },
         { key: "fmnmf2_opt5",   header: "FastMNMF2 Optuna n=5 ★ (mixture)", secDefault: false },
         { key: "fmnmf2_opt7",   header: "FastMNMF2 Optuna n=7 ★ (mixture)", secDefault: true  },
         { key: "spatial_em", header: "Spatial EM", secDefault: false },
@@ -475,30 +474,21 @@
 
   // FastMNMF2 on mixture — n=5 baseline (STFT=2048 hop=512 iter=100 n_comp=6)
   for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"90deg","~90°"],[3,"178deg","~178°"],[4,"313deg","~313°"],[5,"358deg","~358°"]])
-    allTracks.push(track(`mix_fmnmf2_tuned_${n}`, MIX, "fmnmf2_tuned", `Source ${n} ${lbl} — FastMNMF2 n=5`, `STFT=2048 hop=512 iter=100 n_comp=6 n_src=5 · est. ${lbl} · cross-corr 0.73`, "auxiva", `../analysis/ica/separated/mixture_fmnmf2_tuned_source_${n}_${key}.wav`));
-
-  // FastMNMF2 n=6,7,8 on mixture — run fastmnmf2_separation.py --wav mixture to generate
-  for (const nsrc of [6, 7, 8]) {
-    for (let n = 1; n <= nsrc; n++)
-      allTracks.push(track(`mix_fmnmf2_n${nsrc}_${n}`, MIX, `fmnmf2_n${nsrc}`,
-        `Source ${n} — FastMNMF2 n=${nsrc}`,
-        `STFT=2048 hop=512 iter=100 n_comp=6 n_src=${nsrc} · run separation script to generate`,
-        "auxiva", `../analysis/ica/separated/mixture_fmnmf2_n${nsrc}_source_${n}_Xdeg.wav`));
-  }
+    allTracks.push(track(`mix_fmnmf2_tuned_${n}`, MIX, "fmnmf2_tuned", `Source ${n} ${lbl} — FastMNMF2 n=5`, `STFT=2048 hop=512 iter=100 n_comp=6 n_src=5 · est. ${lbl} · cross-corr 0.73`, "fmnmf2", `../analysis/ica/separated/mixture_fmnmf2_tuned_source_${n}_${key}.wav`));
 
   // FastMNMF2 Optuna n=5 (stft=2048 hop=256 iter=240 n_comp=6 · cross-corr 0.373)
   for (let n = 1; n <= 5; n++)
     allTracks.push(track(`mix_fmnmf2_opt5_${n}`, MIX, "fmnmf2_opt5",
       `Source ${n} — FastMNMF2 Optuna n=5`,
       `Optuna 50 trials · stft=2048 hop=256 iter=240 n_comp=6 · cross-corr 0.373`,
-      "auxiva", `../analysis/ica/separated/mixture_fmnmf2_opt_n5_source_${n}.wav`));
+      "fmnmf2", `../analysis/ica/separated/mixture_fmnmf2_opt_n5_source_${n}.wav`));
 
-  // FastMNMF2 Optuna n=7 — dedicated job running now
+  // FastMNMF2 Optuna n=7 — best result: stft=2048 hop=1024 iter=180 n_comp=6 · cross-corr 0.930
   for (let n = 1; n <= 7; n++)
     allTracks.push(track(`mix_fmnmf2_opt7_${n}`, MIX, "fmnmf2_opt7",
       `Source ${n} — FastMNMF2 Optuna n=7`,
-      `Optuna 50 trials · stft/hop/iter/n_comp from Bayesian search`,
-      "auxiva", `../analysis/ica/separated/mixture_fmnmf2_opt_n7_source_${n}.wav`));
+      `Optuna 50 trials · stft=2048 hop=1024 iter=180 n_comp=6 · cross-corr 0.930`,
+      "fmnmf2", `../analysis/ica/separated/mixture_fmnmf2_opt_n7_source_${n}.wav`));
 
   for (const [n, key, lbl] of [[1,"178deg","~178°"],[2,"313deg","~313°"],[3,"356deg","~356°"],[4,"134deg","~134°"]])
     allTracks.push(track(`mix_ilrma_tuned_${n}`, MIX, "ilrma_tuned", `Source ${n} ${lbl} — ILRMA tuned`, `example-tuned hp · est. ${lbl} · hop=512 iter=110 · NMF_k=2`, "ilrma", `${MA}/ilrma_tuned_source_${n}_${key}.wav`));
@@ -557,17 +547,11 @@
       `2-src · some reverb`,
       "dprnn", `${DL}/mixture_dprnn_wham_clean_src${i}.wav`));
 
-  for (let i = 1; i <= 4; i++)
-    allTracks.push(track(`mix_sf4mix_${i}`, MIX, "sf4mix",
-      `Source ${i} — SepFormer Libri4Mix`,
-      `4-src · 48 kHz · hahmadraz/sepformer-libri4mix`,
-      "sf4mix", `${DL}/mixture_sepformer4_libri4mix_src${i}.wav`));
-
-  // ── MIXTURE — ICA + Enhancement (5-source fmnmf2 tuned outputs, sources 1-4 have enhanced files)
-  for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"90deg","~90°"],[3,"178deg","~178°"],[4,"313deg","~313°"]]) {
-    allTracks.push(track(`mix_fmnmf2t_mg_${n}`,    MIX, "fmnmf2t_mg",    `Source ${n} ${lbl} — FastMNMF2T + MetricGAN+`,       `n_src=5 · MetricGAN+ enhancement`, "auxiva", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_metricgan.wav`));
-    allTracks.push(track(`mix_fmnmf2t_wpe_${n}`,   MIX, "fmnmf2t_wpe",   `Source ${n} ${lbl} — FastMNMF2T + WPE`,              `n_src=5 · WPE dereverberation`,    "auxiva", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_wpe.wav`));
-    allTracks.push(track(`mix_fmnmf2t_wpemg_${n}`, MIX, "fmnmf2t_wpemg", `Source ${n} ${lbl} — FastMNMF2T + WPE + MetricGAN+`, `n_src=5 · WPE → MetricGAN+`,       "auxiva", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_wpe_metricgan.wav`));
+  // ── MIXTURE — ICA + Enhancement (fmnmf2 tuned outputs with existing enhanced files)
+  for (const [n, key, lbl] of [[1,"90deg","~90°"],[2,"90deg","~90°"],[3,"313deg","~313°"],[4,"356deg","~356°"]]) {
+    allTracks.push(track(`mix_fmnmf2t_mg_${n}`,    MIX, "fmnmf2t_mg",    `Source ${n} ${lbl} — FastMNMF2T + MetricGAN+`,       `n_src=5 · MetricGAN+ enhancement`, "fmnmf2", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_metricgan.wav`));
+    allTracks.push(track(`mix_fmnmf2t_wpe_${n}`,   MIX, "fmnmf2t_wpe",   `Source ${n} ${lbl} — FastMNMF2T + WPE`,              `n_src=5 · WPE dereverberation`,    "fmnmf2", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_wpe.wav`));
+    allTracks.push(track(`mix_fmnmf2t_wpemg_${n}`, MIX, "fmnmf2t_wpemg", `Source ${n} ${lbl} — FastMNMF2T + WPE + MetricGAN+`, `n_src=5 · WPE → MetricGAN+`,       "fmnmf2", `${EH}/mixture_fmnmf2_tuned_source_${n}_${key}_wpe_metricgan.wav`));
   }
 
   // ── MIXTURE — Steered Beamforming (SRP-PHAT peaks) ───────────────────────────
@@ -592,16 +576,14 @@
       polarNote:  "SRP-PHAT spatial spectrum of <code>example_mixture.wav</code>. DoA estimates: ~3°, 90°, ~178°, 270°. Known positions: 0°, 90°, 180°, 270°.",
     },
     mixture: {
-      sub: `<code>mixture.wav</code> — at least 7 speakers at unknown positions, estimated from the signal.<br>
-            SRP-PHAT scan found 5 spatial peaks: ~2° / 90° / ~178° / ~228° / 270° — the 90° direction likely contains 2+ overlapping speakers.<br>
-            FastMNMF2 tuned (n_src=5, tuned on example_mixture.wav): separates 5 sources at ~90° / ~90° / ~178° / ~313° / ~358° · cross-corr 0.73.<br>
-            AuxIVA example-tuned (n_fft=2048 hop=512 iter=90): ~135° / ~178° / ~313° / ~356°.<br>
-            ILRMA transfer from example: ~134° / ~178° / ~313° / ~358°.<br>
-            Diarization-guided MVDR: pyannote found 2 speakers only (mean DNSMOS 1.92).<br>
+      sub: `<code>mixture.wav</code> — 7 speakers at estimated positions.<br>
+            SRP-PHAT (all 6 mic pairs, 0.5° resolution) found 7 peaks: ~2° / ~25° / 90° / ~178° / 270° / ~332° / ~358°.<br>
+            Note: lateral sources (90°/270°) have ±15–20° uncertainty (small 1.6 cm front-rear baseline); front/back pairs (2°/358°, 178°) may be ambiguous.<br>
+            Best separation: FastMNMF2 Optuna n=7 (stft=2048 hop=1024 iter=180 n_comp=6) · cross-corr 0.930.<br>
             When multiple versions exist, the default clip set stays visible; alternate variants are in hidden subsections.`,
-      polarTitle: "SRP-PHAT scan — mixture",
-      polarSrc:   "../analysis/steered_beamform/outputs/srp_phat_scan.png",
-      polarNote:  "SRP-PHAT spatial scan of <code>mixture.wav</code>. Five peaks found: ~2°, 90°, ~178°, ~228°, 270°. Bright = strong source direction.",
+      polarTitle: "SRP-PHAT — mixture.wav (7 peaks)",
+      polarSrc:   "../analysis/doa/doa_polar.png",
+      polarNote:  "SRP-PHAT power map of <code>mixture.wav</code>. 7 peaks: ~2°, ~25°, 90°, ~178°, 270°, ~332°, ~358°. Convention: 0°=front, 90°=left, 270°=right.",
     },
   };
 

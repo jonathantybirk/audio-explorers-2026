@@ -158,7 +158,7 @@ if args.plot:
                     xytext=(np.deg2rad(az), pw + 0.08))
         ax.plot(np.deg2rad(az), pw, "ro", markersize=8)
     ax.set_theta_zero_location("N")
-    ax.set_theta_direction(-1)
+    ax.set_theta_direction(1)   # CCW: 0°=front, 90°=left, 270°=right
     ax.set_title(f"SRP-PHAT power map — mixture.wav\n(top {args.n_src} peaks)", pad=15)
     plt.tight_layout()
     plt.savefig(os.path.join(OUT_DIR, "doa_polar.png"), dpi=150)
