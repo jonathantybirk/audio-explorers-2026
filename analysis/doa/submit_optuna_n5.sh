@@ -11,7 +11,6 @@
 #BSUB -e /zhome/53/3/169791/audio-explorers-2026/analysis/doa/logs/optuna_n5_%J.err
 
 mkdir -p /zhome/53/3/169791/audio-explorers-2026/analysis/doa/logs
-mkdir -p /zhome/53/3/169791/audio-explorers-2026/analysis/ica/separated
 
 if [ -n "$LS_SUBCWD" ]; then
   cd "$LS_SUBCWD" || exit 1
@@ -31,9 +30,6 @@ source "$VENV/bin/activate"
 
 pip install --quiet --upgrade pip
 pip install --quiet pyroomacoustics optuna scipy numpy
-
-echo "=== Generating inter-ear masked mixture ==="
-python3 analysis/doa/isolate_convoman4.py
 
 echo "=== Running Optuna n=5 ==="
 python3 analysis/doa/optuna_interear_n5.py
