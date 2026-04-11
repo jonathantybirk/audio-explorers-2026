@@ -165,15 +165,96 @@
       border-top: 1px solid #ece7dc; background: #fff;
     }
     .empty-list { padding: 14px; color: var(--muted); font-size: 13px; background: white; }
+
+    /* ── DoA windows panel ──────────────────────────────── */
+    .doa-windows-wrap {
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; background: white;
+    }
+    .doa-windows-wrap h3 {
+      padding: 8px 14px; font-size: 11px;
+      text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+      border-bottom: 1px solid var(--border); background: #f9f6ef;
+    }
+    .doa-windows-scroll { max-height: 280px; overflow-y: auto; }
+    .doa-win-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 14px; border-bottom: 1px solid #f0ede6;
+      cursor: pointer; transition: background .1s;
+      font-size: 12px;
+    }
+    .doa-win-row:last-child { border-bottom: none; }
+    .doa-win-row:hover { background: #f5f0e6; }
+    .doa-win-row.active-win { background: var(--active); border-left: 3px solid var(--accent); padding-left: 11px; }
+    .doa-win-row.has-front { background: #fffbeb; }
+    .doa-win-row.has-front:hover { background: #fef3c7; }
+    .doa-win-row.active-win.has-front { background: var(--active); }
+    .win-t { min-width: 42px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .win-peaks { display: flex; gap: 4px; flex-wrap: wrap; }
+    .peak-chip {
+      font-size: 10px; padding: 1px 5px; border-radius: 99px; font-weight: 600;
+    }
+    .peak-front { background: #fef3c7; color: #92400e; }
+    .peak-left  { background: #dbeafe; color: #1e40af; }
+    .peak-back  { background: #ede9fe; color: #5b21b6; }
+    .peak-right { background: #d1fae5; color: #065f46; }
+    .peak-other { background: #f3f4f6; color: #6b7280; }
     .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
     .legend span { display: flex; align-items: center; gap: 4px; }
     .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+    /* ── Inspect tab ────────────────────────────────────── */
+    .inspect-layout {
+      display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;
+    }
+    .inspect-tracklist {
+      width: 260px; flex-shrink: 0;
+      border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; background: white;
+    }
+    .inspect-tracklist h2 {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+      color: var(--muted); padding: 8px 14px;
+      background: #f9f6ef; border-bottom: 1px solid var(--border);
+    }
+    .inspect-tracklist .group-header { margin-top: 0; }
+    .inspect-right {
+      flex: 1; min-width: 340px; display: flex; flex-direction: column; gap: 14px;
+    }
+    /* Custom player */
+    .custom-player {
+      border: 1px solid var(--border); border-radius: 12px;
+      background: white; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .cp-title {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cp-title-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .cp-controls { display: flex; align-items: center; gap: 10px; }
+    .cp-play {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: white; border: none;
+      font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .cp-play:hover { background: #0d6460; }
+    .cp-scrubber-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .cp-scrubber {
+      width: 100%; height: 6px; accent-color: var(--accent); cursor: pointer;
+    }
+    .cp-time {
+      font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+      display: flex; justify-content: space-between;
+    }
+    .cp-time .cp-cur { color: var(--accent); font-weight: 600; }
 
     @media (max-width: 900px) {
       .header-bar { flex-direction: column; }
       .layout { flex-direction: column; }
       .playlists-scroll { width: 100%; max-width: 100%; }
       .right { width: 100%; }
+      .inspect-tracklist { width: 100%; }
     }
   </style>
 </head>
@@ -191,6 +272,9 @@
         <button class="tab active" id="tab-mixture" onclick="switchRecording('mixture')">
           mixture.wav <span class="tab-badge">estimated positions</span>
         </button>
+        <button class="tab" id="tab-inspect" onclick="switchRecording('inspect')">
+          Inspect <span class="tab-badge">DoA seek</span>
+        </button>
       </div>
     </div>
 
@@ -200,6 +284,50 @@
 
     <div class="col-toggles" id="col-toggles">
       <span class="filter-title">Columns</span>
+    </div>
+
+    <!-- ── Inspect tab ─────────────────────────────────────────────────────── -->
+    <div id="inspect-view" style="display:none">
+      <div class="inspect-layout">
+        <div class="inspect-tracklist">
+          <h2>Tracks</h2>
+          <div id="inspect-list"></div>
+        </div>
+        <div class="inspect-right">
+          <div class="custom-player">
+            <div class="cp-title" id="cp-title">No track selected</div>
+            <div class="cp-title-sub" id="cp-sub"></div>
+            <div class="cp-controls">
+              <button class="cp-play" id="cp-play" onclick="cpTogglePlay()">▶</button>
+              <div class="cp-scrubber-wrap">
+                <input class="cp-scrubber" id="cp-scrubber" type="range" min="0" max="100" step="0.01" value="0" oninput="cpScrub(this.value)" onchange="cpScrub(this.value)">
+                <div class="cp-time">
+                  <span class="cp-cur" id="cp-cur">0.00 s</span>
+                  <span id="cp-dur">— s</span>
+                </div>
+              </div>
+            </div>
+            <audio id="cp-audio" preload="metadata"></audio>
+          </div>
+          <div class="doa-windows-wrap">
+            <h3>Windowed SRP-PHAT &mdash; click to seek</h3>
+            <div style="padding:10px 14px 6px">
+              <canvas id="doa-timeline" height="72" style="width:100%;border-radius:6px;cursor:crosshair;display:block"></canvas>
+            </div>
+            <div style="padding:4px 14px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <span id="doa-win-info" style="font-size:12px;color:var(--muted)">Play audio to see current window</span>
+              <span style="font-size:11px;color:var(--muted)">1 s windows · 0.25 s hop</span>
+            </div>
+            <div class="plot-note" style="display:flex;gap:8px;flex-wrap:wrap">
+              <span class="peak-chip peak-front">~0° front</span>
+              <span class="peak-chip peak-left">~90° left</span>
+              <span class="peak-chip peak-back">~180° back</span>
+              <span class="peak-chip peak-right">~270° right</span>
+              <span class="peak-chip peak-other">other</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="layout">
@@ -236,6 +364,11 @@
           <h3 id="polar-title"></h3>
           <img id="polar-img" alt="SRP-PHAT polar">
           <div class="plot-note" id="polar-note"></div>
+        </div>
+        <div class="doa-windows-wrap" id="doa-windows-wrap" style="display:none">
+          <h3>Windowed SRP-PHAT &mdash; seek to window</h3>
+          <div class="doa-windows-scroll" id="doa-windows-scroll"></div>
+          <div class="plot-note">1 s windows, 0.25 s hop. Click a row to seek audio. <span style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:99px;font-size:10px;font-weight:600">~0°</span> rows have a near-front peak.</div>
         </div>
       </div>
     </div>
@@ -739,8 +872,22 @@
     currentRecording = rec;
     document.getElementById("tab-example").classList.toggle("active", rec === "example");
     document.getElementById("tab-mixture").classList.toggle("active", rec === "mixture");
+    document.getElementById("tab-inspect").classList.toggle("active", rec === "inspect");
 
-    // Reset to defaults
+    const isInspect = rec === "inspect";
+    document.getElementById("inspect-view").style.display = isInspect ? "" : "none";
+    document.querySelector(".layout").style.display       = isInspect ? "none" : "";
+    document.getElementById("col-toggles").style.display  = isInspect ? "none" : "";
+    document.getElementById("recording-sub").style.display = isInspect ? "none" : "";
+    document.getElementById("status").style.display        = isInspect ? "none" : "";
+    document.getElementById("meta").style.display          = isInspect ? "none" : "";
+
+    if (isInspect) {
+      buildInspectView();
+      return;
+    }
+
+    // Reset to defaults for normal tabs
     enabledCols = {};
     enabledSecs = {};
     for (const col of ALL_COLS) {
@@ -758,6 +905,15 @@
     buildToggles();
     syncSelectionAfterVisibilityChange();
     renderPlaylists();
+
+    // Show windowed DoA panel only for mixture
+    const doaWrap = document.getElementById("doa-windows-wrap");
+    if (rec === "mixture" && doaWindows.length) {
+      buildDoaWindowsPanel();
+      doaWrap.style.display = "";
+    } else {
+      doaWrap.style.display = "none";
+    }
   }
 
   // ── Status ──────────────────────────────────────────────────────────────────
@@ -809,6 +965,78 @@
   audioEl.addEventListener("pause",  updateStatus);
   audioEl.addEventListener("ended",  updateStatus);
 
+  // ── Windowed DoA panel ──────────────────────────────────────────────────────
+  // Inlined from analysis/doa/windowed_doa.json (t + top-3 peaks only)
+  let doaWindows = [{"t": 0.5, "p": [180.0, 356.0, 270.0]}, {"t": 0.75, "p": [180.0, 270.0, 356.0]}, {"t": 1.0, "p": [313.0, 61.0, 178.0]}, {"t": 1.25, "p": [4.0, 354.0, 313.0]}, {"t": 1.5, "p": [270.0, 90.0, 180.0]}, {"t": 1.75, "p": [270.0, 90.0, 180.0]}, {"t": 2.0, "p": [270.0, 90.0, 180.0]}, {"t": 2.25, "p": [4.0, 270.0, 90.0]}, {"t": 2.5, "p": [270.0, 90.0, 182.0]}, {"t": 2.75, "p": [180.0, 270.0, 356.0]}, {"t": 3.0, "p": [176.0, 270.0, 90.0]}, {"t": 3.25, "p": [90.0, 270.0, 2.0]}, {"t": 3.5, "p": [90.0, 270.0, 178.0]}, {"t": 3.75, "p": [119.0, 241.0, 61.0]}, {"t": 4.0, "p": [90.0, 270.0, 180.0]}, {"t": 4.25, "p": [90.0, 270.0, 358.0]}, {"t": 4.5, "p": [356.0, 180.0, 90.0]}, {"t": 4.75, "p": [358.0, 182.0, 2.0]}, {"t": 5.0, "p": [270.0, 90.0, 180.0]}, {"t": 5.25, "p": [270.0, 90.0, 180.0]}, {"t": 5.5, "p": [90.0, 270.0, 178.0]}, {"t": 5.75, "p": [90.0, 270.0, 178.0]}, {"t": 6.0, "p": [90.0, 270.0, 180.0]}, {"t": 6.25, "p": [270.0, 90.0, 358.0]}, {"t": 6.5, "p": [358.0, 2.0, 178.0]}, {"t": 6.75, "p": [180.0, 356.0, 4.0]}, {"t": 7.0, "p": [270.0, 90.0, 313.0]}, {"t": 7.25, "p": [358.0, 2.0, 270.0]}, {"t": 7.5, "p": [358.0, 2.0, 182.0]}, {"t": 7.75, "p": [180.0, 270.0, 90.0]}, {"t": 8.0, "p": [270.0, 182.0, 90.0]}, {"t": 8.25, "p": [270.0, 90.0, 180.0]}, {"t": 8.5, "p": [176.0, 270.0, 90.0]}, {"t": 8.75, "p": [90.0, 270.0, 176.0]}, {"t": 9.0, "p": [178.0, 90.0, 270.0]}, {"t": 9.25, "p": [176.0, 90.0, 270.0]}, {"t": 9.5, "p": [90.0, 176.0, 270.0]}, {"t": 9.75, "p": [313.0, 184.0, 63.0]}, {"t": 10.0, "p": [90.0, 270.0, 178.0]}, {"t": 10.25, "p": [180.0, 90.0, 270.0]}, {"t": 10.5, "p": [270.0, 90.0, 180.0]}, {"t": 10.75, "p": [90.0, 270.0, 184.0]}, {"t": 11.0, "p": [270.0, 356.0, 180.0]}, {"t": 11.25, "p": [90.0, 270.0, 180.0]}, {"t": 11.5, "p": [180.0, 270.0, 90.0]}, {"t": 11.75, "p": [90.0, 178.0, 270.0]}, {"t": 12.0, "p": [176.0, 90.0, 270.0]}, {"t": 12.25, "p": [90.0, 270.0, 176.0]}, {"t": 12.5, "p": [90.0, 176.0, 270.0]}, {"t": 12.75, "p": [90.0, 270.0, 2.0]}, {"t": 13.0, "p": [270.0, 90.0, 180.0]}, {"t": 13.25, "p": [90.0, 270.0, 178.0]}, {"t": 13.5, "p": [180.0, 90.0, 270.0]}, {"t": 13.75, "p": [236.0, 313.0, 119.0]}, {"t": 14.0, "p": [180.0, 90.0, 270.0]}, {"t": 14.25, "p": [2.0, 358.0, 270.0]}, {"t": 14.5, "p": [270.0, 90.0, 180.0]}, {"t": 14.75, "p": [311.0, 62.0, 36.0]}, {"t": 15.0, "p": [270.0, 90.0, 180.0]}, {"t": 15.25, "p": [270.0, 90.0, 176.0]}, {"t": 15.5, "p": [90.0, 270.0, 176.0]}, {"t": 15.75, "p": [176.0, 90.0, 270.0]}, {"t": 16.0, "p": [270.0, 90.0, 180.0]}, {"t": 16.25, "p": [313.0, 4.0, 270.0]}, {"t": 16.5, "p": [180.0, 356.0, 270.0]}, {"t": 16.75, "p": [356.0, 180.0, 311.0]}, {"t": 17.0, "p": [356.0, 180.0, 270.0]}, {"t": 17.25, "p": [356.0, 180.0, 270.0]}, {"t": 17.5, "p": [180.0, 270.0, 356.0]}, {"t": 17.75, "p": [311.0, 63.0, 184.0]}, {"t": 18.0, "p": [182.0, 270.0, 90.0]}, {"t": 18.25, "p": [180.0, 270.0, 90.0]}, {"t": 18.5, "p": [270.0, 180.0, 90.0]}, {"t": 18.75, "p": [180.0, 270.0, 90.0]}, {"t": 19.0, "p": [270.0, 90.0, 182.0]}, {"t": 19.25, "p": [270.0, 90.0, 180.0]}, {"t": 19.5, "p": [270.0, 90.0, 180.0]}, {"t": 19.75, "p": [180.0, 270.0, 90.0]}, {"t": 20.0, "p": [270.0, 90.0, 178.0]}, {"t": 20.25, "p": [4.0, 270.0, 90.0]}];
+  // map to expected shape
+  doaWindows = doaWindows.map(w => ({ t_centre: w.t, top_peaks_deg: w.p }));
+  let activeWinIdx = null;
+
+  function peakCategory(az) {
+    if (az > 330 || az < 30)  return "front";
+    if (az >= 60  && az < 120) return "left";
+    if (az >= 150 && az < 210) return "back";
+    if (az >= 240 && az < 300) return "right";
+    return "other";
+  }
+
+  function buildDoaWindowsPanel() {
+    const scroll = document.getElementById("doa-windows-scroll");
+    scroll.innerHTML = "";
+    doaWindows.forEach((w, idx) => {
+      const hasFront = w.top_peaks_deg.some(az => az > 330 || az < 30);
+      const row = document.createElement("div");
+      row.className = "doa-win-row" + (hasFront ? " has-front" : "");
+      row.dataset.winIdx = idx;
+
+      const tSpan = document.createElement("span");
+      tSpan.className = "win-t";
+      tSpan.textContent = w.t_centre.toFixed(2) + "s";
+
+      const peaksDiv = document.createElement("div");
+      peaksDiv.className = "win-peaks";
+      w.top_peaks_deg.forEach(az => {
+        const chip = document.createElement("span");
+        chip.className = "peak-chip peak-" + peakCategory(az);
+        chip.textContent = Math.round(az) + "°";
+        peaksDiv.appendChild(chip);
+      });
+
+      row.appendChild(tSpan);
+      row.appendChild(peaksDiv);
+      row.addEventListener("click", () => seekToWindow(idx));
+      scroll.appendChild(row);
+    });
+  }
+
+  function seekToWindow(idx) {
+    const w = doaWindows[idx];
+    if (!w) return;
+    const t = Math.max(0, w.t_centre - 0.5);   // seek to window start
+    audioEl.currentTime = t;
+    if (audioEl.paused && audioEl.src) audioEl.play();
+    // highlight
+    activeWinIdx = idx;
+    document.querySelectorAll(".doa-win-row").forEach((r, i) => {
+      r.classList.toggle("active-win", i === idx);
+    });
+    document.querySelectorAll(".doa-win-row")[idx]?.scrollIntoView({ block: "nearest" });
+  }
+
+  // Update highlighted row as audio plays
+  audioEl.addEventListener("timeupdate", () => {
+    if (!doaWindows.length) return;
+    const t = audioEl.currentTime;
+    // Find window whose centre is closest to current time
+    let best = 0, bestD = Infinity;
+    doaWindows.forEach((w, i) => { const d = Math.abs(w.t_centre - t); if (d < bestD) { bestD = d; best = i; } });
+    if (best !== activeWinIdx) {
+      activeWinIdx = best;
+      document.querySelectorAll(".doa-win-row").forEach((r, i) => r.classList.toggle("active-win", i === best));
+    }
+  });
+
+
   function handleSingleTrackClick(id) {
     if (id === selectedTrackId) { audioEl.paused ? audioEl.play() : audioEl.pause(); return; }
     selectTrack(id);
@@ -826,6 +1054,305 @@
     if (id !== selectedTrackId) selectTrack(id);
     audioEl.currentTime = 0;
     audioEl.play();
+  }
+
+  // ── Inspect tab ─────────────────────────────────────────────────────────────
+  // Extra tracks only shown in inspect (custom outputs not in allTracks)
+  const INSPECT_EXTRA = [
+    { id: "ix_convoman_wiener",     label: "Convo man — Mask-MVDR",                   sub: "MVDR toward 2°, BW covariance estimated from right-heavy bins", badge: "raw",    src: "../analysis/doa/convoman_wiener.wav" },
+    { id: "ix_convoman_wiener_vad", label: "Convo man — Mask-MVDR + pitch VAD",       sub: "female frames suppressed (~180-300 Hz F0 gated)",              badge: "raw",    src: "../analysis/doa/convoman_wiener_vad.wav" },
+    { id: "ix_ie_n3_1", label: "Inter-ear n=3 — Source 1", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n3_source_1.wav" },
+    { id: "ix_ie_n3_2", label: "Inter-ear n=3 — Source 2", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n3_source_2.wav" },
+    { id: "ix_ie_n3_3", label: "Inter-ear n=3 — Source 3", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n3_source_3.wav" },
+    { id: "ix_ie_n4_1", label: "Inter-ear n=4 — Source 1", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n4_source_1.wav" },
+    { id: "ix_ie_n4_2", label: "Inter-ear n=4 — Source 2", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n4_source_2.wav" },
+    { id: "ix_ie_n4_3", label: "Inter-ear n=4 — Source 3", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n4_source_3.wav" },
+    { id: "ix_ie_n4_4", label: "Inter-ear n=4 — Source 4", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n4_source_4.wav" },
+    { id: "ix_ie_n5_1", label: "Inter-ear n=5 — Source 1", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n5_source_1.wav" },
+    { id: "ix_ie_n5_2", label: "Inter-ear n=5 — Source 2", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n5_source_2.wav" },
+    { id: "ix_ie_n5_3", label: "Inter-ear n=5 — Source 3", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n5_source_3.wav" },
+    { id: "ix_ie_n5_4", label: "Inter-ear n=5 — Source 4", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n5_source_4.wav" },
+    { id: "ix_ie_n5_5", label: "Inter-ear n=5 — Source 5", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n5_source_5.wav" },
+    { id: "ix_ie_n6_1", label: "Inter-ear n=6 — Source 1", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n6_source_1.wav" },
+    { id: "ix_ie_n6_2", label: "Inter-ear n=6 — Source 2", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n6_source_2.wav" },
+    { id: "ix_ie_n6_3", label: "Inter-ear n=6 — Source 3", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n6_source_3.wav" },
+    { id: "ix_ie_n6_4", label: "Inter-ear n=6 — Source 4", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n6_source_4.wav" },
+    { id: "ix_ie_n6_5", label: "Inter-ear n=6 — Source 5", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n6_source_5.wav" },
+    { id: "ix_ie_n6_6", label: "Inter-ear n=6 — Source 6", sub: "FastMNMF2 on inter-ear masked mixture", badge: "fmnmf2", src: "../analysis/ica/separated/mixture_interear_n6_source_6.wav" },
+    { id: "ix_latsup_raw",          label: "Lateral-suppressed mixture",               sub: "4-ch mixture with 90°/270° Wiener-suppressed (input to BSS)",  badge: "raw",    src: "../analysis/ica/separated/mixture_lateral_suppressed.wav" },
+    { id: "ix_latsup_1",            label: "Lat-sup FastMNMF2 n=5 — Source 1",        sub: "BSS after removing australia man + brunch woman",              badge: "fmnmf2", src: "../analysis/ica/separated/mixture_latsup_fmnmf2_n5_source_1.wav" },
+    { id: "ix_latsup_2",            label: "Lat-sup FastMNMF2 n=5 — Source 2",        sub: "BSS after removing australia man + brunch woman",              badge: "fmnmf2", src: "../analysis/ica/separated/mixture_latsup_fmnmf2_n5_source_2.wav" },
+    { id: "ix_latsup_3",            label: "Lat-sup FastMNMF2 n=5 — Source 3",        sub: "BSS after removing australia man + brunch woman",              badge: "fmnmf2", src: "../analysis/ica/separated/mixture_latsup_fmnmf2_n5_source_3.wav" },
+    { id: "ix_latsup_4",            label: "Lat-sup FastMNMF2 n=5 — Source 4",        sub: "BSS after removing australia man + brunch woman",              badge: "fmnmf2", src: "../analysis/ica/separated/mixture_latsup_fmnmf2_n5_source_4.wav" },
+    { id: "ix_latsup_5",            label: "Lat-sup FastMNMF2 n=5 — Source 5",        sub: "BSS after removing australia man + brunch woman",              badge: "fmnmf2", src: "../analysis/ica/separated/mixture_latsup_fmnmf2_n5_source_5.wav" },
+    { id: "ix_interear_masked",     label: "Inter-ear balance masked (4-ch → LF)",   sub: "killed left-only (AM, 30.5%) + right-only (BW, 53.8%) TF bins", badge: "raw",    src: "../analysis/ica/separated/mixture_interear_masked.wav" },
+    { id: "ix_cm_mvdr_bw",          label: "MVDR — brunch woman nulled only",          sub: "MVDR toward 2°, covariance from right-heavy bins",             badge: "mmvdr", src: "../analysis/doa/convoman_mvdr_bw_only.wav" },
+    { id: "ix_cm_mvdr_am",          label: "MVDR — australia man nulled only",          sub: "MVDR toward 2°, covariance from left-heavy bins",              badge: "mmvdr", src: "../analysis/doa/convoman_mvdr_am_only.wav" },
+    { id: "ix_cm_cascade",          label: "MVDR — cascade (both nulled)",              sub: "geometric mean of BW-null and AM-null outputs",                badge: "mmvdr", src: "../analysis/doa/convoman_cascade_mvdr.wav" },
+    { id: "ix_cm_gated",            label: "Convo man — hard mask + CW gate (LF)",    sub: "binary lateral mask + convo woman VAD gate applied",           badge: "raw",    src: "../analysis/doa/convoman_hardmask_gated.wav" },
+    { id: "ix_cm_n2_1",             label: "Convo man n=2 — Source 1",                sub: "FastMNMF2 n=2 on hard-masked + CW-gated 4-ch signal",          badge: "fmnmf2", src: "../analysis/doa/convoman_n2_source_1.wav" },
+    { id: "ix_cm_n2_2",             label: "Convo man n=2 — Source 2",                sub: "FastMNMF2 n=2 on hard-masked + CW-gated 4-ch signal",          badge: "fmnmf2", src: "../analysis/doa/convoman_n2_source_2.wav" },
+    { id: "ix_am_interear",         label: "Australia man — inter-ear mask",           sub: "left-dominant TF bins only (30.5%), left channels averaged",    badge: "raw",    src: "../analysis/ica/separated/australia_man_interear.wav" },
+    { id: "ix_am_bss_1",            label: "Australia man — BSS n=2 Source 1",         sub: "AM mask applied to 4ch, then FastMNMF2 n=2",                    badge: "fmnmf2", src: "../analysis/ica/separated/australia_man_bss_n2_source_1.wav" },
+    { id: "ix_am_bss_2",            label: "Australia man — BSS n=2 Source 2",         sub: "AM mask applied to 4ch, then FastMNMF2 n=2",                    badge: "fmnmf2", src: "../analysis/ica/separated/australia_man_bss_n2_source_2.wav" },
+    { id: "ix_bw_interear",         label: "Brunch woman — inter-ear mask",            sub: "right-dominant TF bins only (53.8%), right channels averaged",   badge: "raw",    src: "../analysis/ica/separated/brunch_woman_interear.wav" },
+    { id: "ix_bw_bss_1",            label: "Brunch woman — BSS n=2 Source 1",          sub: "BW mask applied to 4ch, then FastMNMF2 n=2",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n2_source_1.wav" },
+    { id: "ix_bw_bss_2",            label: "Brunch woman — BSS n=2 Source 2",          sub: "BW mask applied to 4ch, then FastMNMF2 n=2",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n2_source_2.wav" },
+    { id: "ix_bw_bss_n3_1",         label: "Brunch woman — BSS n=3 Source 1",          sub: "BW mask applied to 4ch, then FastMNMF2 n=3",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n3_source_1.wav" },
+    { id: "ix_bw_bss_n3_2",         label: "Brunch woman — BSS n=3 Source 2",          sub: "BW mask applied to 4ch, then FastMNMF2 n=3",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n3_source_2.wav" },
+    { id: "ix_bw_bss_n3_3",         label: "Brunch woman — BSS n=3 Source 3",          sub: "BW mask applied to 4ch, then FastMNMF2 n=3",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n3_source_3.wav" },
+    { id: "ix_bw_bss_n4_1",         label: "Brunch woman — BSS n=4 Source 1",          sub: "BW mask applied to 4ch, then FastMNMF2 n=4",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n4_source_1.wav" },
+    { id: "ix_bw_bss_n4_2",         label: "Brunch woman — BSS n=4 Source 2",          sub: "BW mask applied to 4ch, then FastMNMF2 n=4",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n4_source_2.wav" },
+    { id: "ix_bw_bss_n4_3",         label: "Brunch woman — BSS n=4 Source 3",          sub: "BW mask applied to 4ch, then FastMNMF2 n=4",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n4_source_3.wav" },
+    { id: "ix_bw_bss_n4_4",         label: "Brunch woman — BSS n=4 Source 4",          sub: "BW mask applied to 4ch, then FastMNMF2 n=4",                    badge: "fmnmf2", src: "../analysis/ica/separated/brunch_woman_bss_n4_source_4.wav" },
+  ];
+  // Merge into lookup used by cpSelectTrack
+  function findTrack(id) {
+    return allTracks.find(x => x.id === id) || INSPECT_EXTRA.find(x => x.id === id) || null;
+  }
+
+  const INSPECT_SECTIONS = [
+    { header: "Transcription helpers",  ids: ["ix_am_interear","ix_am_bss_1","ix_am_bss_2","ix_bw_interear","ix_bw_bss_1","ix_bw_bss_2","ix_bw_bss_n3_1","ix_bw_bss_n3_2","ix_bw_bss_n3_3","ix_bw_bss_n4_1","ix_bw_bss_n4_2","ix_bw_bss_n4_3","ix_bw_bss_n4_4"] },
+    { header: "Convo man isolation",    ids: ["ix_interear_masked","ix_convoman_wiener","ix_convoman_wiener_vad","ix_cm_mvdr_bw","ix_cm_mvdr_am","ix_cm_cascade"] },
+    { header: "Inter-ear masked — FastMNMF2 n=3", ids: ["ix_ie_n3_1","ix_ie_n3_2","ix_ie_n3_3"] },
+    { header: "Inter-ear masked — FastMNMF2 n=4", ids: ["ix_ie_n4_1","ix_ie_n4_2","ix_ie_n4_3","ix_ie_n4_4"] },
+    { header: "Inter-ear masked — FastMNMF2 n=5", ids: ["ix_ie_n5_1","ix_ie_n5_2","ix_ie_n5_3","ix_ie_n5_4","ix_ie_n5_5"] },
+    { header: "Inter-ear masked — FastMNMF2 n=6", ids: ["ix_ie_n6_1","ix_ie_n6_2","ix_ie_n6_3","ix_ie_n6_4","ix_ie_n6_5","ix_ie_n6_6"] },
+    { header: "Lat-sup FastMNMF2 n=5", ids: ["ix_latsup_raw","ix_latsup_1","ix_latsup_2","ix_latsup_3","ix_latsup_4","ix_latsup_5"] },
+    { header: "Convo man VAD gate + n=2", ids: ["ix_cm_gated","ix_cm_n2_1","ix_cm_n2_2"] },
+    { header: "Raw scene",              ids: ["mix_raw_scene"] },
+    { header: "Microphones",            ids: ["mix_mic_LF","mix_mic_LR","mix_mic_RF","mix_mic_RR"] },
+    { header: "FastMNMF2 Optuna n=5 ★", ids: ["mix_fmnmf2_opt5_1","mix_fmnmf2_opt5_2","mix_fmnmf2_opt5_3","mix_fmnmf2_opt5_4","mix_fmnmf2_opt5_5"] },
+    { header: "FastMNMF2 Optuna n=7 ★", ids: ["mix_fmnmf2_opt7_1","mix_fmnmf2_opt7_2","mix_fmnmf2_opt7_3","mix_fmnmf2_opt7_4","mix_fmnmf2_opt7_5","mix_fmnmf2_opt7_6","mix_fmnmf2_opt7_7"] },
+  ];
+
+  const cpAudio   = document.getElementById("cp-audio");
+  const cpScrubEl = document.getElementById("cp-scrubber");
+  const cpCurEl   = document.getElementById("cp-cur");
+  const cpDurEl   = document.getElementById("cp-dur");
+  const cpPlayBtn = document.getElementById("cp-play");
+  const cpTitleEl = document.getElementById("cp-title");
+  const cpSubEl   = document.getElementById("cp-sub");
+  let cpSelectedId = null;
+  let cpScrubbing  = false;
+
+  function fmt(s) { return isFinite(s) ? s.toFixed(2) + " s" : "— s"; }
+
+  cpAudio.addEventListener("timeupdate", () => {
+    if (cpScrubbing) return;
+    cpCurEl.textContent = fmt(cpAudio.currentTime);
+    if (cpAudio.duration)
+      cpScrubEl.value = (cpAudio.currentTime / cpAudio.duration) * 100;
+  });
+
+  // 60fps RAF loop for smooth playhead
+  let rafId = null;
+  function rafLoop() {
+    if (!cpAudio.paused && !cpAudio.ended) {
+      const t = cpAudio.currentTime;
+      cpCurEl.textContent = fmt(t);
+      if (cpAudio.duration) cpScrubEl.value = (t / cpAudio.duration) * 100;
+      syncInspectTimeline();
+    }
+    rafId = requestAnimationFrame(rafLoop);
+  }
+  rafLoop();
+  cpAudio.addEventListener("loadedmetadata", () => {
+    cpScrubEl.max = 100;
+    cpDurEl.textContent = fmt(cpAudio.duration);
+  });
+  cpAudio.addEventListener("play",  () => { cpPlayBtn.textContent = "⏸"; });
+  cpAudio.addEventListener("pause", () => { cpPlayBtn.textContent = "▶"; });
+  cpAudio.addEventListener("ended", () => { cpPlayBtn.textContent = "▶"; });
+
+  function cpTogglePlay() {
+    if (!cpAudio.src) return;
+    cpAudio.paused ? cpAudio.play() : cpAudio.pause();
+  }
+
+  function cpScrub(val) {
+    if (!cpAudio.duration) return;
+    cpScrubbing = true;
+    const t = (val / 100) * cpAudio.duration;
+    cpAudio.currentTime = t;
+    cpCurEl.textContent = fmt(t);
+    syncInspectTimeline();
+    cpScrubbing = false;
+  }
+
+  function cpSelectTrack(id) {
+    const t = findTrack(id);
+    if (!t) return;
+    cpSelectedId = id;
+    cpTitleEl.textContent = t.label;
+    cpSubEl.textContent   = t.sub || "";
+    if (cpAudio.getAttribute("src") !== t.src) {
+      cpAudio.src = t.src;
+      cpAudio.currentTime = 0;
+      cpScrubEl.value = 0;
+      cpCurEl.textContent = "0.00 s";
+      cpDurEl.textContent = "— s";
+    }
+    cpAudio.play();
+    document.querySelectorAll(".inspect-item").forEach(el => {
+      el.classList.toggle("active", el.dataset.trackId === id);
+    });
+  }
+
+  let cpClickTimer = null;
+
+  function cpScheduleClick(id) {
+    clearTimeout(cpClickTimer);
+    cpClickTimer = setTimeout(() => {
+      cpClickTimer = null;
+      if (id === cpSelectedId) {
+        cpAudio.paused ? cpAudio.play() : cpAudio.pause();
+      } else {
+        cpSelectTrack(id);
+      }
+    }, CLICK_DELAY_MS);
+  }
+
+  function cpHandleDoubleClick(id) {
+    clearTimeout(cpClickTimer);
+    cpClickTimer = null;
+    if (id !== cpSelectedId) cpSelectTrack(id);
+    cpAudio.currentTime = 0;
+    cpAudio.play();
+  }
+
+  // ── DoA timeline canvas ─────────────────────────────────────────────────────
+  const PEAK_COLORS = {
+    front: { fill: "#fbbf24", text: "#92400e" },
+    left:  { fill: "#60a5fa", text: "#1e40af" },
+    back:  { fill: "#a78bfa", text: "#5b21b6" },
+    right: { fill: "#34d399", text: "#065f46" },
+    other: { fill: "#d1d5db", text: "#6b7280" },
+  };
+
+  let tlCanvas = null, tlCtx = null;
+  const TL_H = 72;
+  const BAND_H = TL_H / 3;   // 3 peaks stacked
+  const TOTAL_DUR = 21.0;
+
+  function drawTimeline(currentT) {
+    if (!tlCanvas || !doaWindows.length) return;
+    const W = tlCanvas.width;
+    tlCtx.clearRect(0, 0, W, TL_H);
+
+    // background
+    tlCtx.fillStyle = "#f3f4f6";
+    tlCtx.fillRect(0, 0, W, TL_H);
+
+    const n = doaWindows.length;
+    const colW = W / n;
+
+    doaWindows.forEach((w, i) => {
+      const x = i * colW;
+      w.top_peaks_deg.forEach((az, rank) => {
+        const cat = peakCategory(az);
+        tlCtx.fillStyle = PEAK_COLORS[cat].fill;
+        tlCtx.fillRect(Math.floor(x), Math.floor(rank * BAND_H), Math.ceil(colW) + 1, Math.ceil(BAND_H));
+      });
+    });
+
+    // time axis ticks every 2s
+    tlCtx.fillStyle = "rgba(0,0,0,0.18)";
+    tlCtx.font = "9px sans-serif";
+    tlCtx.textAlign = "center";
+    for (let s = 0; s <= TOTAL_DUR; s += 2) {
+      const x = (s / TOTAL_DUR) * W;
+      tlCtx.fillRect(x, 0, 1, TL_H);
+      if (s > 0 && s < TOTAL_DUR)
+        tlCtx.fillText(s + "s", x, TL_H - 2);
+    }
+
+    // playhead
+    if (currentT != null) {
+      const px = (currentT / TOTAL_DUR) * W;
+      tlCtx.strokeStyle = "#ef4444";
+      tlCtx.lineWidth = 2;
+      tlCtx.beginPath();
+      tlCtx.moveTo(px, 0);
+      tlCtx.lineTo(px, TL_H);
+      tlCtx.stroke();
+    }
+  }
+
+  function initTimeline() {
+    tlCanvas = document.getElementById("doa-timeline");
+    if (!tlCanvas) return;
+    // Set actual pixel width to match CSS display width
+    tlCanvas.width = tlCanvas.offsetWidth || 600;
+    tlCtx = tlCanvas.getContext("2d");
+    drawTimeline(cpAudio.currentTime || null);
+
+    tlCanvas.addEventListener("click", e => {
+      const rect = tlCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const t = (x / rect.width) * TOTAL_DUR;
+      cpAudio.currentTime = t;
+      cpScrubEl.value = cpAudio.duration ? (t / cpAudio.duration) * 100 : 0;
+      cpCurEl.textContent = fmt(t);
+      if (cpAudio.paused && cpAudio.src) cpAudio.play();
+      drawTimeline(t);
+      updateWinInfo(t);
+    });
+
+    tlCanvas.addEventListener("mousemove", e => {
+      const rect = tlCanvas.getBoundingClientRect();
+      const t = ((e.clientX - rect.left) / rect.width) * TOTAL_DUR;
+      updateWinInfo(t);
+    });
+
+    tlCanvas.addEventListener("mouseleave", () => {
+      updateWinInfo(cpAudio.currentTime);
+    });
+  }
+
+  function updateWinInfo(t) {
+    if (!doaWindows.length) return;
+    let best = 0, bestD = Infinity;
+    doaWindows.forEach((w, i) => { const d = Math.abs(w.t_centre - t); if (d < bestD) { bestD = d; best = i; } });
+    const w = doaWindows[best];
+    const peakStr = w.top_peaks_deg.map(az => Math.round(az) + "°").join(" / ");
+    document.getElementById("doa-win-info").textContent = `t = ${w.t_centre.toFixed(2)}s  →  ${peakStr}`;
+  }
+
+  function syncInspectTimeline() {
+    if (!tlCanvas) return;
+    const t = cpAudio.currentTime;
+    drawTimeline(t);
+    updateWinInfo(t);
+  }
+
+  function buildInspectView() {
+    // Track list
+    const list = document.getElementById("inspect-list");
+    list.innerHTML = "";
+    INSPECT_SECTIONS.forEach(sec => {
+      const hdr = document.createElement("div");
+      hdr.className = "group-header";
+      hdr.textContent = sec.header;
+      list.appendChild(hdr);
+      sec.ids.forEach((id, idx) => {
+        const t = findTrack(id);
+        if (!t) return;
+        const item = document.createElement("div");
+        item.className = "item inspect-item" + (id === cpSelectedId ? " active" : "");
+        item.dataset.trackId = id;
+        item.innerHTML = `
+          <span class="num">${String(idx + 1).padStart(2,"0")}</span>
+          <span class="name">${t.label}${t.sub ? `<br><span style="font-size:11px;color:#999">${t.sub}</span>` : ""}</span>
+          <span class="badge ${t.badge}">${t.badge.toUpperCase()}</span>`;
+        item.addEventListener("click",    () => cpScheduleClick(id));
+        item.addEventListener("dblclick", () => cpHandleDoubleClick(id));
+        list.appendChild(item);
+      });
+    });
+
+    // Init canvas timeline (defer one frame so canvas has layout width)
+    setTimeout(initTimeline, 0);
   }
 
   // Initial render
