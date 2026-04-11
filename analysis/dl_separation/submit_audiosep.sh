@@ -41,10 +41,25 @@ if ! python3 -c "import torchaudio; torchaudio.load" 2>/dev/null; then
 fi
 
 pip install --quiet soundfile
-if ! python3 -c "from audiosep import AudioSep" 2>/dev/null; then
-    echo "Installing AudioSep from GitHub..."
-    pip install --quiet git+https://github.com/Audio-AGI/AudioSep
+
+# AudioSep has no setup.py/pyproject.toml — clone and add to PYTHONPATH
+AUDIOSEP_DIR="$HOME/AudioSep"
+if [ ! -d "$AUDIOSEP_DIR" ]; then
+    echo "Cloning AudioSep..."
+    git clone --depth 1 https://github.com/Audio-AGI/AudioSep "$AUDIOSEP_DIR" || {
+        echo "ERROR: git clone of AudioSep failed." >&2; exit 1
+    }
 fi
+# Install its dependencies (transformers, huggingface_hub, etc.)
+pip install --quiet transformers huggingface_hub peft
+export PYTHONPATH="$AUDIOSEP_DIR:$PYTHONPATH"
+
+if ! python3 -c "from audiosep import AudioSep" 2>/dev/null; then
+    echo "ERROR: AudioSep import still fails after clone. Check $AUDIOSEP_DIR." >&2
+    ls "$AUDIOSEP_DIR"
+    exit 1
+fi
+echo "AudioSep import OK"
 
 nvidia-smi
 

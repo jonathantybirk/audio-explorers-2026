@@ -279,11 +279,32 @@ def train(args):
     )
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
-    train_ds = Libri7MixDataset(args.train_dir, sr=args.sr, max_len_s=args.max_len_s)
-    val_ds   = Libri7MixDataset(args.val_dir,   sr=args.sr, max_len_s=args.max_len_s)
+    full_ds = Libri7MixDataset(args.train_dir, sr=args.sr, max_len_s=args.max_len_s)
+
+    val_dl = None
+    if args.val_dir:
+        val_files = glob.glob(os.path.join(args.val_dir, "mix", "*.wav"))
+        if len(val_files) > 0:
+            val_ds   = Libri7MixDataset(args.val_dir, sr=args.sr, max_len_s=args.max_len_s)
+            train_ds = full_ds
+            val_dl   = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
+                                  num_workers=args.num_workers, pin_memory=True)
+            print(f"  Using separate val dir: {len(val_files)} mixes")
+        else:
+            print(f"  val-dir '{args.val_dir}' is empty — falling back to 90/10 split")
+
+    if val_dl is None:
+        n_val    = max(1, int(0.1 * len(full_ds)))
+        n_train  = len(full_ds) - n_val
+        train_ds, val_ds = torch.utils.data.random_split(
+            full_ds, [n_train, n_val],
+            generator=torch.Generator().manual_seed(42)
+        )
+        val_dl = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False,
+                            num_workers=args.num_workers, pin_memory=True)
+        print(f"  Train/val split: {n_train}/{n_val}")
+
     train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
-                          num_workers=args.num_workers, pin_memory=True)
-    val_dl   = DataLoader(val_ds,   batch_size=args.batch_size, shuffle=False,
                           num_workers=args.num_workers, pin_memory=True)
 
     os.makedirs(args.ckpt_dir, exist_ok=True)
@@ -343,7 +364,7 @@ def train(args):
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=f"Fine-tune SepFormer 3→{N_SRC} sources with LoRA")
     p.add_argument("--train-dir",   required=True)
-    p.add_argument("--val-dir",     required=True)
+    p.add_argument("--val-dir",     default="")
     p.add_argument("--base-model",  default="speechbrain/sepformer-wsj03mix")
     p.add_argument("--base-n-src",  type=int,   default=3)
     p.add_argument("--sr",          type=int,   default=16000,

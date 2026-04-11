@@ -274,12 +274,12 @@
         { key: "auxiva_opt",    header: "AuxIVA Optuna ★ (mixture)",     secDefault: true  },
         { key: "ilrma",         header: "ILRMA (default)",               secDefault: false },
         { key: "ilrma_tuned",   header: "ILRMA (hp from example)",       secDefault: false },
-        { key: "fmnmf2_tuned",  header: "FastMNMF2 n=5 (hand-picked hp)",secDefault: true  },
+        { key: "fmnmf2_tuned",  header: "FastMNMF2 n=5 (hand-picked hp)",secDefault: false },
         { key: "fmnmf2_n6",     header: "FastMNMF2 n=6",                 secDefault: false },
         { key: "fmnmf2_n7",     header: "FastMNMF2 n=7",                 secDefault: false },
         { key: "fmnmf2_n8",     header: "FastMNMF2 n=8",                 secDefault: false },
         { key: "fmnmf2_opt5",   header: "FastMNMF2 Optuna n=5 ★ (mixture)", secDefault: false },
-        { key: "fmnmf2_opt7",   header: "FastMNMF2 Optuna n=7 ★ (mixture)", secDefault: false },
+        { key: "fmnmf2_opt7",   header: "FastMNMF2 Optuna n=7 ★ (mixture)", secDefault: true  },
         { key: "spatial_em", header: "Spatial EM", secDefault: false },
     ]},
     { id: "dl",       label: "Deep Learning",    colDefault: false, sections: [
@@ -290,16 +290,16 @@
         { key: "sf4mix",   header: "SepFormer Libri4Mix ★", secDefault: false },
     ]},
     { id: "enhanced", label: "ICA + Enhancement", colDefault: false, sections: [
-        { key: "fmnmf2t_mg",    header: "FastMNMF2 Tuned + MetricGAN+ ★", secDefault: true },
+        { key: "fmnmf2t_mg",    header: "FastMNMF2 Tuned + MetricGAN+ ★", secDefault: false },
         { key: "fmnmf2t_wpe",   header: "FastMNMF2 Tuned + WPE",          secDefault: false },
         { key: "fmnmf2t_wpemg", header: "FastMNMF2 Tuned + WPE + MetricGAN+", secDefault: false },
         { key: "icaw_mg",       header: "ICA Wiener + MetricGAN+",         secDefault: false },
         { key: "icaw_wpe",      header: "ICA Wiener + WPE",                secDefault: false },
         { key: "icaw_wpemg",    header: "ICA Wiener + WPE + MetricGAN+",   secDefault: false },
     ]},
-    { id: "steered", label: "Steered Beamforming", colDefault: true, sections: [
-        { key: "srdas",  header: "Delay-and-Sum (SRP peaks)", secDefault: true },
-        { key: "srmvdr", header: "MVDR (SRP peaks)",          secDefault: true },
+    { id: "steered", label: "Steered Beamforming", colDefault: false, sections: [
+        { key: "srdas",  header: "Delay-and-Sum (SRP peaks)", secDefault: false },
+        { key: "srmvdr", header: "MVDR (SRP peaks)",          secDefault: false },
     ]},
   ];
 

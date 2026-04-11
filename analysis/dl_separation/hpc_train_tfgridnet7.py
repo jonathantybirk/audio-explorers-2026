@@ -100,7 +100,7 @@ class TFGridNet(nn.Module):
     def forward(self, mix: torch.Tensor) -> torch.Tensor:
         window = torch.hann_window(self.n_fft, device=mix.device)
         X = torch.stft(mix, self.n_fft, self.hop, window=window,
-                       return_complex=True, center=False)
+                       return_complex=True, center=True)
         inp  = torch.stack([X.real, X.imag], dim=1)
         feat = self.input_proj(inp)
         feat = feat.permute(0, 1, 3, 2)
@@ -117,7 +117,7 @@ class TFGridNet(nn.Module):
             s_im = X.real * m_im + X.imag * m_re
             S = torch.complex(s_re, s_im)
             wav = torch.istft(S, self.n_fft, self.hop, window=window,
-                              length=mix.shape[-1], center=False)
+                              length=mix.shape[-1], center=True)
             sources.append(wav)
         return torch.stack(sources, dim=1)
 

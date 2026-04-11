@@ -71,4 +71,4 @@ python3 analysis/dl_separation/hpc_finetune_sepformer7.py \
     --epochs     30 \
     --batch-size 8 \
     --num-workers 4 \
-    --ckpt-dir   analysis/dl_separation/logs/sepformer7_ckpt
+    --ckpt-dir   $BLACKHOLE/sepformer7_ckpt
