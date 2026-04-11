@@ -1,0 +1,31 @@
+{
+  "n_src": 5,
+  "method": "SRP-PHAT on raw mixture",
+  "speakers": [
+    {
+      "speaker": 1,
+      "azimuth_deg": 2.0,
+      "relative_power": 1.0
+    },
+    {
+      "speaker": 2,
+      "azimuth_deg": 90.0,
+      "relative_power": 0.7494
+    },
+    {
+      "speaker": 3,
+      "azimuth_deg": 178.0,
+      "relative_power": 0.621
+    },
+    {
+      "speaker": 4,
+      "azimuth_deg": 270.0,
+      "relative_power": 0.7536
+    },
+    {
+      "speaker": 5,
+      "azimuth_deg": 358.0,
+      "relative_power": 0.8066
+    }
+  ]
+}
