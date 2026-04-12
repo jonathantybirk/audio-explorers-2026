@@ -1092,6 +1092,17 @@
     { id: "ix_cm_gated",            label: "Convo man — hard mask + CW gate (LF)",    sub: "binary lateral mask + convo woman VAD gate applied",           badge: "raw",    src: "../analysis/doa/convoman_hardmask_gated.wav" },
     { id: "ix_cm_n2_1",             label: "Convo man n=2 — Source 1",                sub: "FastMNMF2 n=2 on hard-masked + CW-gated 4-ch signal",          badge: "fmnmf2", src: "../analysis/doa/convoman_n2_source_1.wav" },
     { id: "ix_cm_n2_2",             label: "Convo man n=2 — Source 2",                sub: "FastMNMF2 n=2 on hard-masked + CW-gated 4-ch signal",          badge: "fmnmf2", src: "../analysis/doa/convoman_n2_source_2.wav" },
+    { id: "ix_cm_noisereduced",      label: "Convo man — NR baseline",                 sub: "inter-ear n=4 s3 · noisereduce non-stat prop=0.8",               badge: "raw", src: "../analysis/ica/separated/convoman_noisereduced.wav" },
+    { id: "ix_dn_src",               label: "Convo man — source (no NR)",              sub: "inter-ear n=4 source 3, raw",                                    badge: "raw", src: "../analysis/ica/separated/mixture_interear_n4_source_3.wav" },
+    { id: "ix_dn_ns09",              label: "NR non-stat prop=0.9",                    sub: "noisereduce stationary=False prop_decrease=0.9",                  badge: "raw", src: "../analysis/ica/separated/convoman_denoise_nr_nonstat_09.wav" },
+    { id: "ix_dn_ns10",              label: "NR non-stat prop=1.0",                    sub: "noisereduce stationary=False prop_decrease=1.0",                  badge: "raw", src: "../analysis/ica/separated/convoman_denoise_nr_nonstat_10.wav" },
+    { id: "ix_dn_st08",              label: "NR stationary prop=0.8",                  sub: "noisereduce stationary=True prop_decrease=0.8",                   badge: "raw", src: "../analysis/ica/separated/convoman_denoise_nr_stat_08.wav" },
+    { id: "ix_dn_st10",              label: "NR stationary prop=1.0",                  sub: "noisereduce stationary=True prop_decrease=1.0",                   badge: "raw", src: "../analysis/ica/separated/convoman_denoise_nr_stat_10.wav" },
+    { id: "ix_dn_agg",               label: "NR aggressive",                           sub: "noisereduce non-stat prop=1.0 thresh_mult=3.0",                   badge: "raw", src: "../analysis/ica/separated/convoman_denoise_nr_aggressive.wav" },
+    { id: "ix_dn_w3",                label: "Wiener filter (kernel=3)",                sub: "scipy.signal.wiener mysize=3",                                   badge: "raw", src: "../analysis/ica/separated/convoman_denoise_wiener_3.wav" },
+    { id: "ix_dn_w7",                label: "Wiener filter (kernel=7)",                sub: "scipy.signal.wiener mysize=7",                                   badge: "raw", src: "../analysis/ica/separated/convoman_denoise_wiener_7.wav" },
+    { id: "ix_dn_bp",                label: "Bandpass only (100–8kHz)",                sub: "6th-order Butterworth bandpass",                                 badge: "raw", src: "../analysis/ica/separated/convoman_denoise_bandpass_only.wav" },
+    { id: "ix_dn_bpnr",              label: "Bandpass + NR",                           sub: "bandpass 100–8kHz then noisereduce non-stat prop=0.9",            badge: "raw", src: "../analysis/ica/separated/convoman_denoise_bandpass_then_nr.wav" },
     { id: "ix_am_interear",         label: "Australia man — inter-ear mask",           sub: "left-dominant TF bins only (30.5%), left channels averaged",    badge: "raw",    src: "../analysis/ica/separated/australia_man_interear.wav" },
     { id: "ix_am_bss_1",            label: "Australia man — BSS n=2 Source 1",         sub: "AM mask applied to 4ch, then FastMNMF2 n=2",                    badge: "fmnmf2", src: "../analysis/ica/separated/australia_man_bss_n2_source_1.wav" },
     { id: "ix_am_bss_2",            label: "Australia man — BSS n=2 Source 2",         sub: "AM mask applied to 4ch, then FastMNMF2 n=2",                    badge: "fmnmf2", src: "../analysis/ica/separated/australia_man_bss_n2_source_2.wav" },
@@ -1112,6 +1123,7 @@
   }
 
   const INSPECT_SECTIONS = [
+    { header: "Convo man — noise reduction sweep", ids: ["ix_dn_src","ix_cm_noisereduced","ix_dn_ns09","ix_dn_ns10","ix_dn_st08","ix_dn_st10","ix_dn_agg","ix_dn_w3","ix_dn_w7","ix_dn_bp","ix_dn_bpnr"] },
     { header: "Transcription helpers",  ids: ["ix_am_interear","ix_am_bss_1","ix_am_bss_2","ix_bw_interear","ix_bw_bss_1","ix_bw_bss_2","ix_bw_bss_n3_1","ix_bw_bss_n3_2","ix_bw_bss_n3_3","ix_bw_bss_n4_1","ix_bw_bss_n4_2","ix_bw_bss_n4_3","ix_bw_bss_n4_4"] },
     { header: "Convo man isolation",    ids: ["ix_interear_masked","ix_convoman_wiener","ix_convoman_wiener_vad","ix_cm_mvdr_bw","ix_cm_mvdr_am","ix_cm_cascade"] },
     { header: "Inter-ear masked — FastMNMF2 n=3", ids: ["ix_ie_n3_1","ix_ie_n3_2","ix_ie_n3_3"] },
