@@ -131,6 +131,10 @@ SOURCES = [
     ("Convo man (s3)  ",  os.path.join(SEP_DIR, "mixture_interear_n4_source_3.wav"),      mix_masked),
     ("Ageing man      ",  os.path.join(SEP_DIR, "mixture_interear_n5_source_1.wav"),      mix_masked),
     ("Burning house   ",  os.path.join(SEP_DIR, "brunch_woman_bss_n4_source_3.wav"),      mix_masked),
+    # Convo Woman candidates
+    ("ConvoW(couple)  ",  os.path.join(SEP_DIR, "best_convo_couple_nr.wav"),              mix_masked),
+    ("ConvoW(n4 s1)   ",  os.path.join(SEP_DIR, "mixture_interear_n4_source_1.wav"),      mix_masked),
+    ("ConvoW(n4 s4)   ",  os.path.join(SEP_DIR, "mixture_interear_n4_source_4.wav"),      mix_masked),
 ]
 
 print(f"\n{'Speaker':<20} {'DoA #1':>8}  {'DoA #2':>8}  {'active frames':>14}")

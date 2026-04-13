@@ -1,0 +1,78 @@
+\documentclass[11pt]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[margin=1in]{geometry}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{caption}
+\usepackage{booktabs}
+\usepackage{placeins}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{pdfpages}
+
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black}
+\captionsetup{font=small, labelfont=bf}
+\captionsetup[sub]{font=small}
+
+% ── Front page ────────────────────────────────────────────────────────────────
+\title{
+    \includegraphics[width=0.35\textwidth]{demant_logo.png} \\[1.5em]
+    \Large \textbf{Audio Explorers 2026} \\[0.4em]
+    \\
+    \large Software Case \\[0.2em]
+    \large \textit{Extracting the Talker of Interest in a Multi-Talker Sound Scene}
+}
+\author{
+    Jonathan Tybirk \\
+    \small BSc Artificial Intelligence and Data, 6th semester \\
+    \small Technical University of Denmark (DTU) \\
+}
+\date{April 2026}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\begin{document}
+\parindent=0pt
+\maketitle
+\thispagestyle{empty}
+\vfill
+\pagebreak
+
+\setcounter{page}{1}
+\include{report}
+
+\appendix
+\section{Transcripts}
+\label{sec:transcripts}
+
+\subsection*{Convo Couple}
+\textbf{M:} Hi, how are you? \textbf{W:} Great, how are you? \textbf{M:} I just had my birthday. \textbf{W:} Really, how old are you? \textbf{M:} I am 35. \textbf{W:} Are you married? \textbf{M:} Yes, I got married 3 years ago. \textbf{W:} Do you have any children? \textbf{M:} Yes, I have a daughter. She is 4 years old. Do you have children? \textbf{W:} Yes, I have two. My older son is 5, and my younger son is 3.
+
+\subsection*{Australia Man}
+Most sightseers will be Chinese, and for the great majority, this 83 million monument to life down under was the closest they'll come to visiting Australia. Australia's Commissioner-General to Expo, Lyndall Sachs, says: ``There's a lack of knowledge here about Australia. They just think we blow stuff up out of the earth and export it.''
+
+\subsection*{Birthday Brunch Woman}
+Every year at my birthday brunch, guests elbow each other over the smoked salmon, while a bowl of pickled herring sits forlornly, mostly untouched. I should probably stop buying it, but I like it, and it's my birthday, after all. This year was no exception, and at the end---
+
+\subsection*{Mountain Man}
+I had never thought about climbing mountain Kilimanjaro until I learned of its statistics. Over 25,000 climbers attack it each year, 40\% can't make it to the top, and a handful don't make it down at all. A foolish curiosity set in --- might be a winner, or a loser.
+
+\subsection*{Ageing Man}
+It is inevitable: the muscles weaken, hearing and vision fade, we get wrinkled and stooped, we can't eat, run or even walk as fast as we used to. We have aches and pains of our body never noticed before. We get old. It sounds miserable, but apparently, it's not. A large Gallup poll found that by almost any measure,~---
+
+\subsection*{Burning House Man}
+What would you save if your house was burning down? If a fire hit my house, I think I'd have this terrible guilt trip. I'd be running around picking up all the things that I haven't done. This teddy bear is not actually that special. I'd just feel really bad about having to exist. I've had it since I---
+
+\section{Case Description}
+(See next pages)
+\label{app:case}
+\includepdf[pages=-]{case.pdf}
+
+
+\end{document}

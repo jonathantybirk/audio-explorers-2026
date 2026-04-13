@@ -337,38 +337,11 @@
       <div class="right">
         <div>
           <audio id="player" controls preload="metadata"></audio>
-          <div class="meta" style="margin-top:8px;font-size:12px">
-            Click to play. Click again to pause/resume. Double-click to restart.
-          </div>
-        </div>
-        <div class="legend">
-          <span><span class="dot" style="background:#6b7280"></span> Raw</span>
-          <span><span class="dot" style="background:#1e40af"></span> D&S</span>
-          <span><span class="dot" style="background:#065f46"></span> MVDR</span>
-          <span><span class="dot" style="background:#0f766e"></span> Mask-MVDR</span>
-          <span><span class="dot" style="background:#9a3412"></span> AuxIVA</span>
-          <span><span class="dot" style="background:#78350f"></span> ILRMA</span>
-          <span><span class="dot" style="background:#166534"></span> Spatial EM</span>
-          <span><span class="dot" style="background:#4338ca"></span> DUET</span>
-          <span><span class="dot" style="background:#be123c"></span> TD-ICA</span>
-          <span><span class="dot" style="background:#92400e"></span> Mic</span>
-          <span><span class="dot" style="background:#6b21a8"></span> SepFormer WHAMR</span>
-          <span><span class="dot" style="background:#5b21b6"></span> SepFormer Libri3Mix</span>
-          <span><span class="dot" style="background:#9d174d"></span> ConvTasNet</span>
-          <span><span class="dot" style="background:#86198f"></span> DPRNN</span>
-          <span><span class="dot" style="background:#0e7490"></span> SepFormer 4-src</span>
-          <span><span class="dot" style="background:#15803d"></span> ICA + Enhancement</span>
-          <span><span class="dot" style="background:#155e75"></span> FastMNMF2</span>
         </div>
         <div class="polar-wrap">
           <h3 id="polar-title"></h3>
           <img id="polar-img" alt="SRP-PHAT polar">
           <div class="plot-note" id="polar-note"></div>
-        </div>
-        <div class="doa-windows-wrap" id="doa-windows-wrap" style="display:none">
-          <h3>Windowed SRP-PHAT &mdash; seek to window</h3>
-          <div class="doa-windows-scroll" id="doa-windows-scroll"></div>
-          <div class="plot-note">1 s windows, 0.25 s hop. Click a row to seek audio. <span style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:99px;font-size:10px;font-weight:600">~0°</span> rows have a near-front peak.</div>
         </div>
       </div>
     </div>
@@ -432,6 +405,10 @@
     { id: "steered", label: "Steered Beamforming", colDefault: false, sections: [
         { key: "srdas",  header: "Delay-and-Sum (SRP peaks)", secDefault: false },
         { key: "srmvdr", header: "MVDR (SRP peaks)",          secDefault: false },
+    ]},
+    { id: "best", label: "Best Per Speaker", colDefault: true, sections: [
+        { key: "best_raw", header: "Best isolation (raw)",          secDefault: true },
+        { key: "best_nr",  header: "Best isolation (noise reduced)", secDefault: true },
     ]},
   ];
 
@@ -695,6 +672,29 @@
     allTracks.push(track(`mix_srmvdr_${n}`, MIX, "srmvdr", `${lbl} — MVDR`,           `SRP-PHAT peak · steered toward ${az}°`, "mvdr", `${SB}/mvdr_peak${n}_${az}deg.wav`));
   }
 
+  // ── MIXTURE — Best per speaker ───────────────────────────────────────────────
+  const BS = "../analysis/ica/separated";
+  const bestRaw = [
+    ["Convo Man",              `${BS}/mixture_interear_n4_source_3.wav`],
+    ["Convo Woman",            `${BS}/mixture_fmnmf2_opt_n5_source_5.wav`],
+    ["Australia Man",          `${BS}/australia_man_interear.wav`],
+    ["Birthday Brunch Woman",  `${BS}/mixture_fmnmf2_opt_n5_source_4.wav`],
+    ["Ageing Man",             `${BS}/mixture_fmnmf2_opt_n5_source_1.wav`],
+    ["Mountain + Burning House Man", `${BS}/mixture_fmnmf2_opt_n5_source_3.wav`],
+  ];
+  const bestNR = [
+    ["Convo Man",              `${BS}/convoman_noisereduced.wav`],
+    ["Convo Woman",            `${BS}/best_convo_couple_nr.wav`],
+    ["Australia Man",          `${BS}/best_australia_man_nr.wav`],
+    ["Birthday Brunch Woman",  `${BS}/best_brunch_woman_nr.wav`],
+    ["Ageing Man",             `${BS}/best_ageing_man_nr.wav`],
+    ["Mountain + Burning House Man", `${BS}/best_mountain_burning_nr.wav`],
+  ];
+  bestRaw.forEach(([name, src], i) =>
+    allTracks.push(track(`mix_best_raw_${i}`, MIX, "best_raw", name, "best isolation · raw", "fmnmf2", src)));
+  bestNR.forEach(([name, src], i) =>
+    allTracks.push(track(`mix_best_nr_${i}`,  MIX, "best_nr",  name, "best isolation · noise reduced (non-stationary prop=0.8)", "fmnmf2", src)));
+
   // ── Per-recording metadata ──────────────────────────────────────────────────
   const RECORDING_META = {
     example: {
@@ -709,11 +709,7 @@
       polarNote:  "SRP-PHAT spatial spectrum of <code>example_mixture.wav</code>. DoA estimates: ~3°, 90°, ~178°, 270°. Known positions: 0°, 90°, 180°, 270°.",
     },
     mixture: {
-      sub: `<code>mixture.wav</code> — 7 speakers at estimated positions.<br>
-            SRP-PHAT (all 6 mic pairs, 0.5° resolution) found 7 peaks: ~2° / ~25° / 90° / ~178° / 270° / ~332° / ~358°.<br>
-            Note: lateral sources (90°/270°) have ±15–20° uncertainty (small 1.6 cm front-rear baseline); front/back pairs (2°/358°, 178°) may be ambiguous.<br>
-            Best separation: FastMNMF2 Optuna n=7 (stft=2048 hop=1024 iter=180 n_comp=6) · cross-corr 0.930.<br>
-            When multiple versions exist, the default clip set stays visible; alternate variants are in hidden subsections.`,
+      sub: ``,
       polarTitle: "SRP-PHAT — mixture.wav (7 peaks)",
       polarSrc:   "../analysis/doa/doa_polar.png",
       polarNote:  "SRP-PHAT power map of <code>mixture.wav</code>. 7 peaks: ~2°, ~25°, 90°, ~178°, 270°, ~332°, ~358°. Convention: 0°=front, 90°=left, 270°=right.",
